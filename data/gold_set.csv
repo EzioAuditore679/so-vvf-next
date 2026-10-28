@@ -1,0 +1,101 @@
+id,testo,tipo_edificio,piano,sostanze_pericolose,persone,meteo
+g001,"Siamo davanti a una casa al secondo piano. In cucina c'è una bombola. Una signora è bloccata nel bagno. Vento sostenuto.",residenziale,2,si,confermate,vento_forte
+g002,"Un palazzo di cinque piani, fumo dal quarto piano. Nessuna fuga di gas. Non sappiamo se ci sia qualcuno dentro. Aria ferma.",residenziale,4,no,incerte,calmo
+g003,"Incendio in un appartamento al terzo piano. C'è una tanica di benzina vicino al divano. Tutti sono usciti. Non tira vento.",residenziale,3,si,assenti,calmo
+g004,"Villetta con fiamme al primo piano. Nessun prodotto chimico in casa. Pare ci sia un anziano al piano di sopra. Tempo stabile.",residenziale,1,no,incerte,calmo
+g005,"Condominio, quinto piano. Ci sono fusti di solvente sul balcone. Un ragazzo è rimasto dentro. Vento forte da ovest.",residenziale,5,si,confermate,vento_forte
+g006,"Abitazione al sesto piano, fiamme in soggiorno. Non c'è gas. Nessuno dentro, siamo sicuri. Aria calma.",residenziale,6,no,assenti,calmo
+g007,"Un appartamento, secondo piano. Acido in una bottiglia sul davanzale. Forse c'è una persona in bagno. Vento sostenuto.",residenziale,2,si,incerte,vento_forte
+g008,"Palazzina al terzo piano, incendio nel corridoio. Niente sostanze pericolose nell'appartamento. Una coppia non riesce a scendere. Aria calma.",residenziale,3,no,confermate,calmo
+g009,"Casa di due piani, fiamme al primo piano. Una bombola di gas nel garage. Non sappiamo quanti siano dentro. Aria calma.",residenziale,1,si,incerte,calmo
+g010,"Palazzo, sesto piano, nessuna sostanza pericolosa, fumo. Una donna è intrappolata sul balcone. Vento forte.",residenziale,6,no,confermate,vento_forte
+g011,"Appartamento al quarto piano, vernici sul pianerottolo. Tutti fuori, l'edificio è vuoto. C'è vento sostenuto.",residenziale,4,si,assenti,vento_forte
+g012,"Condominio al secondo piano. Nessun rischio chimico. Potrebbe esserci un bambino nella stanza. Tempo calmo.",residenziale,2,no,incerte,calmo
+g013,"Casa al terzo piano, cisterna di gasolio in cantina. Due ragazzi bloccati al piano di sopra. Vento forte.",residenziale,3,si,confermate,vento_forte
+g014,"Abitazione al primo piano. Niente gas, niente solventi. Non c'è nessuno dentro. Tempo stabile.",residenziale,1,no,assenti,calmo
+g015,"Palazzo di sei piani, quinto piano in fiamme. Bombole di ossigeno nel salone. Forse qualcuno è ancora dentro. Vento sostenuto.",residenziale,5,si,incerte,vento_forte
+g016,"Una palazzina al quarto piano. Non ci sono sostanze pericolose. Una famiglia non riesce a uscire dalla camera. Calmo.",residenziale,4,no,confermate,calmo
+g017,"Appartamento, primo piano. Serbatoio di GPL sul terrazzo. Sono tutti usciti. Vento forte.",residenziale,1,si,assenti,vento_forte
+g018,"Un condominio, sesto piano. Nessun gas in casa. Non sappiamo se ci siano persone. Aria ferma.",residenziale,6,no,incerte,calmo
+g019,"Villetta, secondo piano. Acido muriatico in garage. Un uomo è bloccato in mansarda. Vento sostenuto.",residenziale,2,si,confermate,vento_forte
+g020,"Abitazione al terzo piano. Vernici infiammabili in soggiorno. Nessuno è rimasto dentro. Tempo calmo.",residenziale,3,si,assenti,calmo
+g021,"Appartamento al quinto piano, niente sostanze pericolose. Una persona è bloccata sul tetto. Vento forte.",residenziale,5,no,confermate,vento_forte
+g022,"Un palazzo al primo piano, fiamme. Nessuna sostanza chimica. Pare ci sia qualcuno, non è sicuro. Aria calma.",residenziale,1,no,incerte,calmo
+g023,"Casa al secondo piano, solventi nel seminterrato. Tutte le persone sono fuori. Vento sostenuto.",residenziale,2,si,assenti,vento_forte
+g024,"Palazzina, quarto piano. Bombola di propano sul balcone. Una persona intrappolata in cucina. Tempo stabile.",residenziale,4,si,confermate,calmo
+g025,"Abitazione al primo piano, nessuna sostanza pericolosa. Qualcuno potrebbe essere rimasto dentro. Vento forte da nord.",residenziale,1,no,incerte,vento_forte
+g026,"Appartamento al terzo piano. Un fornello acceso e vernici in cucina. L'edificio risulta sgombro. Non tira vento.",residenziale,3,si,assenti,calmo
+g027,"Condominio al sesto piano, fumo denso. Niente rischio chimico. Due anziani bloccati nell'ascensore. Aria ferma.",residenziale,6,no,confermate,calmo
+g028,"Palazzo al secondo piano, fiamme. Acido in un secchio sulle scale. Forse ci sono persone al piano di sopra. Vento sostenuto.",residenziale,2,si,incerte,vento_forte
+g029,"Abitazione al quarto piano. Non sappiamo se ci sia qualcuno. Nessun gas. Vento forte.",residenziale,4,no,incerte,vento_forte
+g030,"Casa al primo piano. Due bombole di gas in cucina. Una donna non riesce a uscire. Tempo calmo.",residenziale,1,si,confermate,calmo
+g031,"Palazzina al secondo piano, fiamme in soggiorno. Serbatoio d'acqua, nessun pericolo chimico. Tutti usciti. Vento sostenuto.",residenziale,2,no,assenti,vento_forte
+g032,"Appartamento al terzo piano, incendio in bagno. Un solvente sotto il lavandino. Persone dentro: non sappiamo. Aria ferma.",residenziale,3,si,incerte,calmo
+g033,"Condominio quarto piano. Vernice e benzina nel box. C'è un uomo intrappolato in camera. Vento forte.",residenziale,4,si,confermate,vento_forte
+g034,"Abitazione al primo piano, nessuna sostanza pericolosa. Nessuno è intrappolato. Tempo stabile.",residenziale,1,no,assenti,calmo
+g035,"Capannone al primo piano del deposito. Fusti di solvente stoccati. Due operai bloccati nel reparto. Vento forte.",industriale,1,si,confermate,vento_forte
+g036,"Stabilimento, secondo piano. Nessuna sostanza pericolosa nello stabilimento. Non sappiamo se ci siano operai. Aria calma.",industriale,2,no,incerte,calmo
+g037,"Un magazzino al terzo piano. Bombole di acetilene. Tutti sono usciti. Tempo stabile.",industriale,3,si,assenti,calmo
+g038,"Fabbrica al quarto piano. Taniche di benzina accanto alle macchine. Un tecnico è bloccato nel locale caldaia. Vento sostenuto.",industriale,4,si,confermate,vento_forte
+g039,"Officina al primo piano. Nessun prodotto chimico, solo attrezzi. Forse c'è qualcuno nel seminterrato. Vento forte.",industriale,1,no,incerte,vento_forte
+g040,"Capannone, sesto piano. Serbatoi di idrocarburi nel cortile. Nessuno dentro, l'edificio è vuoto. Aria ferma.",industriale,6,si,assenti,calmo
+g041,"Deposito al secondo piano. Cloro in fusti. Una persona non riesce a uscire dal ballatoio. Calmo.",industriale,2,si,confermate,calmo
+g042,"Stabilimento al terzo piano, fumo nero. Vernici e solventi. Pare ci sia un operaio dentro. Vento sostenuto.",industriale,3,si,incerte,vento_forte
+g043,"Capannone al quarto piano. Niente sostanze pericolose. Due persone intrappolate sul soppalco. Tempo calmo.",industriale,4,no,confermate,calmo
+g044,"Deposito, primo piano. Bombola di GPL e solventi. Tutti usciti dall'edificio. Vento forte.",industriale,1,si,assenti,vento_forte
+g045,"Fabbrica al secondo piano. Non c'è nessun rischio chimico. Potrebbe esserci un operaio nel retro. Aria calma.",industriale,2,no,incerte,calmo
+g046,"Stabilimento, quinto piano. Acido solforico in una vasca. Un uomo è bloccato vicino al forno. Vento forte.",industriale,5,si,confermate,vento_forte
+g047,"Officina, terzo piano. Nessuna sostanza infiammabile in vista. Non sappiamo se ci sia gente. Tempo stabile.",industriale,3,no,incerte,calmo
+g048,"Capannone al primo piano. Serbatoio di gasolio. Nessuno è ferito, tutti fuori. Vento sostenuto.",industriale,1,si,assenti,vento_forte
+g049,"Magazzino al secondo piano. Vernici in scatola. Tutti fuori, siamo sicuri. Aria ferma.",industriale,2,si,assenti,calmo
+g050,"Stabilimento al quarto piano. Solventi nel laboratorio. Due tecnici non riescono a uscire. Vento forte.",industriale,4,si,confermate,vento_forte
+g051,"Capannone al terzo piano. Nessun gas. Forse c'è un addetto dentro. Vento sostenuto.",industriale,3,no,incerte,vento_forte
+g052,"Deposito al quinto piano. Bombole di azoto. Un addetto intrappolato in cella frigorifera. Aria calma.",industriale,5,si,confermate,calmo
+g053,"Fabbrica al sesto piano. Stoccaggio di prodotti chimici. Non sappiamo se ci sia personale. Calmo.",industriale,6,si,incerte,calmo
+g054,"Stabilimento, primo piano. Niente sostanze pericolose. Tutti sono usciti. Vento forte.",industriale,1,no,assenti,vento_forte
+g055,"Capannone al secondo piano. Acido in fusti. Un operaio bloccato sotto una trave. Tempo stabile.",industriale,2,si,confermate,calmo
+g056,"Officina al quarto piano. Gas tecnici in bombole. Una persona è intrappolata. Vento sostenuto.",industriale,4,si,confermate,vento_forte
+g057,"Deposito, terzo piano. Nessuna sostanza pericolosa, solo cartoni. Potrebbe esserci gente dentro. Aria ferma.",industriale,3,no,incerte,calmo
+g058,"Stabilimento al primo piano. Vernici e solventi. L'edificio risulta vuoto. Vento forte.",industriale,1,si,assenti,vento_forte
+g059,"Capannone, quinto piano. Non ci sono sostanze pericolose. Due persone bloccate al piano superiore. Calmo.",industriale,5,no,confermate,calmo
+g060,"Fabbrica al secondo piano. Benzina in taniche. Forse ci sono operai nel reparto. Vento sostenuto.",industriale,2,si,incerte,vento_forte
+g061,"Officina al terzo piano. Nessuna fuga di gas. Un tecnico non riesce a scendere. Tempo calmo.",industriale,3,no,confermate,calmo
+g062,"Magazzino, sesto piano. Serbatoio di acido cloridrico. Tutti fuori. Aria calma.",industriale,6,si,assenti,calmo
+g063,"Stabilimento al quarto piano. Niente rischio chimico. Non c'è nessuno dentro. Vento forte.",industriale,4,no,assenti,vento_forte
+g064,"Capannone al primo piano. Bombole di ossigeno e fusti di vernice. Una donna è bloccata in ufficio. Vento forte.",industriale,1,si,confermate,vento_forte
+g065,"Deposito al quarto piano. Non sappiamo se ci sia qualcuno. Nessun prodotto infiammabile. Aria ferma.",industriale,4,no,incerte,calmo
+g066,"Fabbrica al terzo piano. Solventi in un bidone. Tutti sono usciti, siamo sicuri. Vento forte.",industriale,3,si,assenti,vento_forte
+g067,"Officina al secondo piano. Acido in un contenitore. Forse c'è un operaio dentro. Tempo stabile.",industriale,2,si,incerte,calmo
+g068,"Incendio in un bosco di pini. Ci sono bombole di gas abbandonate. Un escursionista è bloccato nella valletta. Vento forte.",bosco,0,si,confermate,vento_forte
+g069,"Fiamme in una pineta. Nessuna sostanza pericolosa. Non sappiamo se ci siano persone. Aria calma.",bosco,0,no,incerte,calmo
+g070,"Sterpaglie in fiamme su una collina. Serbatoio di gasolio vicino al cancello. Tutti sono usciti. Vento sostenuto.",bosco,0,si,assenti,vento_forte
+g071,"Area boschiva in fiamme, versante est. Nessun rischio chimico. Forse c'è qualcuno nel sentiero. Tempo calmo.",bosco,0,no,incerte,calmo
+g072,"Un bosco di querce brucia. Taniche di solvente abbandonate. Un uomo è intrappolato tra le fiamme. Vento forte.",bosco,0,si,confermate,vento_forte
+g073,"Incendio in sterpaglie lungo la strada. Niente sostanze pericolose. Nessuno intrappolato, tutti fuori. Aria calma.",bosco,0,no,assenti,calmo
+g074,"Pineta in fiamme. Bombole di propano accanto a una baracca di legno. Due boscaioli bloccati dal fuoco. Vento forte.",bosco,0,si,confermate,vento_forte
+g075,"Sterpaglie e macchia mediterranea in fiamme. Nessuna sostanza infiammabile. Tutti sono usciti. Non c'è vento.",bosco,0,no,assenti,calmo
+g076,"Bosco in fiamme sulla dorsale. Fusti di vernice abbandonati. Non sappiamo se ci sia gente. Vento sostenuto.",bosco,0,si,incerte,vento_forte
+g077,"Incendio in una pineta vicino alla costa. Nessun gas. Una famiglia di campeggiatori non riesce a uscire. Aria calma.",bosco,0,no,confermate,calmo
+g078,"Area boschiva con sterpaglie alte. Bombola di gas nel campo. Potrebbe esserci un pastore nascosto. Tempo calmo.",bosco,0,si,incerte,calmo
+g079,"Fiamme in un bosco di castagni. Nessun prodotto chimico. Tutti sono fuori dall'area. Vento forte.",bosco,0,no,assenti,vento_forte
+g080,"Un bosco brucia sul pendio. Solventi versati dal camion. Un camionista bloccato nella cabina. Vento forte.",bosco,0,si,confermate,vento_forte
+g081,"Pineta in fiamme. Acido nel bagagliaio di un furgone. Non sappiamo quante persone siano nell'area. Tempo stabile.",bosco,0,si,incerte,calmo
+g082,"Sterpaglie in fiamme. Niente gas, niente solventi. Nessuno intrappolato. Aria ferma.",bosco,0,no,assenti,calmo
+g083,"Incendio boschivo in collina. Un serbatoio di carburante nel rifugio. Un ragazzo è bloccato dietro il muro di fuoco. Vento sostenuto.",bosco,0,si,confermate,vento_forte
+g084,"Bosco di pini in fiamme. Vernici accanto ai rami secchi. Forse c'è qualcuno nel sentiero. Vento forte.",bosco,0,si,incerte,vento_forte
+g085,"Un'area boschiva brucia. Nessuna sostanza pericolosa. Un cacciatore non riesce a uscire dal sentiero. Tempo calmo.",bosco,0,no,confermate,calmo
+g086,"Pineta con fiamme alte. Bombole di ossigeno abbandonate. Tutti sono usciti, sono sicuri. Vento forte.",bosco,0,si,assenti,vento_forte
+g087,"Sterpaglie e arbusti in fiamme. Non c'è nessun rischio chimico. Potrebbe esserci gente dentro un capanno. Aria calma.",bosco,0,no,incerte,calmo
+g088,"Incendio in un bosco. Gasolio sparso sul terreno. Due operai intrappolati nel fosso. Vento forte.",bosco,0,si,confermate,vento_forte
+g089,"Incendio in una pineta. Nessuna fuga di gas. Non c'è nessuno dentro. Tempo stabile.",bosco,0,no,assenti,calmo
+g090,"Area boschiva in fiamme vicino al paese. Serbatoio di acqua antincendio. Non sappiamo se ci siano persone. Vento sostenuto.",bosco,0,no,incerte,vento_forte
+g091,"Sterpaglie in fiamme. Bombole di gas nel prato. Una persona è intrappolata nella boscaglia. Vento forte.",bosco,0,si,confermate,vento_forte
+g092,"Bosco in fiamme sulla montagna. Niente sostanze pericolose. Forse ci sono escursionisti. Aria ferma.",bosco,0,no,incerte,calmo
+g093,"Un bosco di querce in fiamme. Vernici e solventi in un capanno. Tutti usciti dal bosco. Vento forte.",bosco,0,si,assenti,vento_forte
+g094,"Pineta in fiamme. Acido solforico in un bidone. Un uomo non riesce a uscire dal bosco. Vento sostenuto.",bosco,0,si,confermate,vento_forte
+g095,"Macchia mediterranea bruciata. Nessun rischio chimico nella zona. Nessuno è intrappolato. Tempo calmo.",bosco,0,no,assenti,calmo
+g096,"Incendio in sterpaglie. Taniche di gasolio. Non sappiamo se ci sia qualcuno. Vento forte.",bosco,0,si,incerte,vento_forte
+g097,"Pineta in fiamme. Niente sostanze pericolose. Due escursionisti bloccati dal fumo. Aria calma.",bosco,0,no,confermate,calmo
+g098,"Bosco in fiamme. Bombola di propano vicino al sentiero. Tutti sono usciti. Vento sostenuto.",bosco,0,si,assenti,vento_forte
+g099,"Incendio in un bosco di conifere. Nessuna sostanza infiammabile. Potrebbe esserci un guardiaboschi nel rifugio. Tempo stabile.",bosco,0,no,incerte,calmo
+g100,"Sterpaglie in fiamme sul versante sud. Fusti di solvente sotto la tettoia. Un uomo è bloccato nel fosso. Vento forte.",bosco,0,si,confermate,vento_forte

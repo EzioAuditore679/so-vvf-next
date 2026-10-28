@@ -1,0 +1,145 @@
+{
+  "piano": {
+    "accuracy": 1.0
+  },
+  "tipo_edificio": {
+    "accuracy": 0.74,
+    "precision_macro": 1.0,
+    "recall_macro": 0.7409387997623291,
+    "f1_macro": 0.8416822171539153,
+    "matrice_confusione": {
+      "etichette": [
+        "bosco",
+        "industriale",
+        "residenziale",
+        "nessuno"
+      ],
+      "matrice": [
+        [
+          32,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          20,
+          0,
+          13
+        ],
+        [
+          0,
+          0,
+          22,
+          12
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "sostanze_pericolose": {
+    "accuracy": 0.93,
+    "precision_macro": 0.9271336553945249,
+    "recall_macro": 0.9328845369237047,
+    "f1_macro": 0.9291426257718393,
+    "matrice_confusione": {
+      "etichette": [
+        "no",
+        "si",
+        "nessuno"
+      ],
+      "matrice": [
+        [
+          41,
+          2,
+          0
+        ],
+        [
+          5,
+          52,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "persone": {
+    "accuracy": 0.76,
+    "precision_macro": 0.963963963963964,
+    "recall_macro": 0.7441176470588236,
+    "f1_macro": 0.8154202506105978,
+    "matrice_confusione": {
+      "etichette": [
+        "assenti",
+        "confermate",
+        "incerte",
+        "nessuno"
+      ],
+      "matrice": [
+        [
+          13,
+          4,
+          0,
+          13
+        ],
+        [
+          0,
+          33,
+          0,
+          3
+        ],
+        [
+          0,
+          0,
+          30,
+          4
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  },
+  "meteo": {
+    "accuracy": 0.77,
+    "precision_macro": 0.9807692307692308,
+    "recall_macro": 0.77,
+    "f1_macro": 0.8408454290807232,
+    "matrice_confusione": {
+      "etichette": [
+        "calmo",
+        "vento_forte",
+        "nessuno"
+      ],
+      "matrice": [
+        [
+          27,
+          2,
+          21
+        ],
+        [
+          0,
+          50,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ]
+    }
+  }
+}
