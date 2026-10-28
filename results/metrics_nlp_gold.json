@@ -3,10 +3,10 @@
     "accuracy": 1.0
   },
   "tipo_edificio": {
-    "accuracy": 0.74,
+    "accuracy": 0.99,
     "precision_macro": 1.0,
-    "recall_macro": 0.7409387997623291,
-    "f1_macro": 0.8416822171539153,
+    "recall_macro": 0.98989898989899,
+    "f1_macro": 0.9948717948717949,
     "matrice_confusione": {
       "etichette": [
         "bosco",
@@ -23,15 +23,15 @@
         ],
         [
           0,
-          20,
+          33,
           0,
-          13
+          0
         ],
         [
           0,
           0,
-          22,
-          12
+          34,
+          0
         ],
         [
           0,
@@ -43,10 +43,10 @@
     }
   },
   "sostanze_pericolose": {
-    "accuracy": 0.93,
-    "precision_macro": 0.9271336553945249,
-    "recall_macro": 0.9328845369237047,
-    "f1_macro": 0.9291426257718393,
+    "accuracy": 0.98,
+    "precision_macro": 0.9796001631986944,
+    "recall_macro": 0.9796001631986944,
+    "f1_macro": 0.9796001631986944,
     "matrice_confusione": {
       "etichette": [
         "no",
@@ -55,13 +55,13 @@
       ],
       "matrice": [
         [
-          41,
-          2,
+          42,
+          1,
           0
         ],
         [
-          5,
-          52,
+          1,
+          56,
           0
         ],
         [
@@ -73,10 +73,10 @@
     }
   },
   "persone": {
-    "accuracy": 0.76,
-    "precision_macro": 0.963963963963964,
-    "recall_macro": 0.7441176470588236,
-    "f1_macro": 0.8154202506105978,
+    "accuracy": 0.98,
+    "precision_macro": 0.990990990990991,
+    "recall_macro": 0.9790849673202615,
+    "f1_macro": 0.9848089480621042,
     "matrice_confusione": {
       "etichette": [
         "assenti",
@@ -86,22 +86,22 @@
       ],
       "matrice": [
         [
-          13,
-          4,
+          29,
           0,
-          13
+          0,
+          1
         ],
         [
           0,
+          36,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
           33,
-          0,
-          3
-        ],
-        [
-          0,
-          0,
-          30,
-          4
+          0
         ],
         [
           0,
@@ -113,10 +113,10 @@
     }
   },
   "meteo": {
-    "accuracy": 0.77,
-    "precision_macro": 0.9807692307692308,
-    "recall_macro": 0.77,
-    "f1_macro": 0.8408454290807232,
+    "accuracy": 1.0,
+    "precision_macro": 1.0,
+    "recall_macro": 1.0,
+    "f1_macro": 1.0,
     "matrice_confusione": {
       "etichette": [
         "calmo",
@@ -125,9 +125,9 @@
       ],
       "matrice": [
         [
-          27,
-          2,
-          21
+          50,
+          0,
+          0
         ],
         [
           0,

@@ -1,0 +1,31 @@
+id,testo,tipo_edificio,piano,sostanze_pericolose,persone,meteo
+d001,"Fiamme in una casa al primo piano. Dentro ci sono delle bombole. Una nonna è bloccata in cucina. C'è vento forte.",residenziale,1,si,confermate,vento_forte
+d002,"Palazzo al quarto piano, incendio nel vano scale. Nessuna sostanza pericolosa. Tutti fuori. Aria ferma.",residenziale,4,no,assenti,calmo
+d003,"Villetta al secondo piano. Taniche di gasolio nel garage. Non sappiamo se c'è qualcuno dentro. Tempo stabile.",residenziale,2,si,incerte,calmo
+d004,"Officina al terzo piano. Vernici e acido nel retro. Un operaio è bloccato. Vento forte.",industriale,3,si,confermate,vento_forte
+d005,"Magazzino al quinto piano. Nessun rischio chimico. Forse c'è qualcuno nel soppalco. Aria calma.",industriale,5,no,incerte,calmo
+d006,"Fabbrica al secondo piano. Bombole di gas e solventi. Tutti sono usciti. Vento sostenuto.",industriale,2,si,assenti,vento_forte
+d007,"Capannone al sesto piano. Non ci sono sostanze infiammabili. Due persone non riescono a scendere. Tempo calmo.",industriale,6,no,confermate,calmo
+d008,"Abitazione al terzo piano. Il gas è chiuso, niente pericoli. Nessun ferito, tutti fuori. Aria ferma.",residenziale,3,no,assenti,calmo
+d009,"Stabilimento al primo piano. Un tecnico è intrappolato nel locale compressori. Serbatoi di idrogeno. Vento forte.",industriale,1,si,confermate,vento_forte
+d010,"Bosco in fiamme. Nessuna sostanza pericolosa nei dintorni. Non sappiamo se ci siano persone. Vento forte.",bosco,0,no,incerte,vento_forte
+d011,"Sterpaglie in fiamme. Taniche di benzina all'aperto. Tutti sono fuori dall'area. Aria calma.",bosco,0,si,assenti,calmo
+d012,"Pineta in fiamme. Una bombola abbandonata. Un anziano non riesce a uscire dalla baita. Vento forte.",bosco,0,si,confermate,vento_forte
+d013,"Casa al primo piano, fuga di GPL in cucina. Una donna è rimasta dentro. Tempo stabile.",residenziale,1,si,confermate,calmo
+d014,"Palazzina al secondo piano. Nessun gas. Non c'è nessuno dentro. Vento sostenuto.",residenziale,2,no,assenti,vento_forte
+d015,"Officina al secondo piano, solventi sul banco. Nessuno è intrappolato. Aria ferma.",industriale,2,si,assenti,calmo
+d016,"Capannone al primo piano. Acido e vernici in fusti. Forse qualcuno è ancora dentro. Vento forte.",industriale,1,si,incerte,vento_forte
+d017,"Villetta, primo piano. Niente sostanze pericolose in casa. Tutti sono usciti. Tempo calmo.",residenziale,1,no,assenti,calmo
+d018,"Pineta in fiamme, versante nord. Solventi in un capanno. Un escursionista è bloccato nel burrone. Vento forte.",bosco,0,si,confermate,vento_forte
+d019,"Magazzino al terzo piano. Non c'è gas, solo scatoloni. Tutti sono fuori. Aria ferma.",industriale,3,no,assenti,calmo
+d020,"Condominio al quarto piano. Bombole di ossigeno. Una persona non riesce a uscire dal bagno. Vento sostenuto.",residenziale,4,si,confermate,vento_forte
+d021,"Abitazione al primo piano, fiamme in soggiorno. Acido in una tanica. Forse c'è gente. Aria calma.",residenziale,1,si,incerte,calmo
+d022,"Stabilimento al quinto piano. Non ci sono sostanze pericolose. Tutti sono usciti. Vento forte.",industriale,5,no,assenti,vento_forte
+d023,"Un bosco di castagni brucia. Vernici abbandonate. Due persone bloccate dal fumo. Tempo stabile.",bosco,0,si,confermate,calmo
+d024,"Palazzo al sesto piano. Nessun gas. Nessuno è ferito, nessuno è rimasto dentro. Vento forte.",residenziale,6,no,assenti,vento_forte
+d025,"Capannone al secondo piano. Un serbatoio di gasolio nel cortile. Non sappiamo quanti operai ci siano. Aria ferma.",industriale,2,si,incerte,calmo
+d026,"Appartamento al terzo piano. Bombole di gas in corridoio. Una signora è intrappolata sul balcone. Non tira vento.",residenziale,3,si,confermate,calmo
+d027,"Stabilimento, quarto piano. Nessun prodotto chimico pericoloso. Nessuno dentro, siamo sicuri. Vento sostenuto.",industriale,4,no,assenti,vento_forte
+d028,"Sterpaglie in fiamme. Nessun gas nella zona. Potrebbe esserci un uomo nel casolare. Aria calma.",bosco,0,no,incerte,calmo
+d029,"Officina al primo piano. Gasolio versato sul pavimento. Tutti usciti dall'edificio. Vento forte.",industriale,1,si,assenti,vento_forte
+d030,"Casa al secondo piano. Nessuna fuga di gas. Un bambino non riesce a uscire dalla stanza. Tempo calmo.",residenziale,2,no,confermate,calmo

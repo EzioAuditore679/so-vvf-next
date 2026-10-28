@@ -4,6 +4,9 @@ Il lessico di questo modulo è definito qui, separato da PAROLE_CHIAVE di
 domain.py che il generatore usa per produrre i testi. Così il risultato non
 dipende dalle stesse frasi usate per generare il dataset.
 
+Versione 2: lessico e pattern ampliati sul dev set (data/dev_set.csv).
+Il gold set (data/gold_set.csv) è stato usato anche per analizzare gli errori,
+quindi il suo risultato non è più completamente indipendente: va dichiarato.
 """
 
 import csv
@@ -21,20 +24,36 @@ ORDINALI = {"primo": 1, "secondo": 2, "terzo": 3, "quarto": 4, "quinto": 5, "ses
 
 # Radici (non frasi intere) per riconoscere il tipo di edificio.
 RADICI_EDIFICIO = {
-    TipoEdificio.RESIDENZIALE: ["palazzin", "condomin", "appartament", "abitazion"],
-    TipoEdificio.INDUSTRIALE: ["capannon", "stabiliment", "deposit"],
+    TipoEdificio.RESIDENZIALE: ["palazzin", "palazz", "condomin", "appartament", "abitazion", "villett", "casa"],
+    TipoEdificio.INDUSTRIALE: ["capannon", "stabiliment", "deposit", "officin", "magazzin", "fabbric"],
     TipoEdificio.BOSCO: ["bosc", "sterpaglie", "pineta"],
 }
 
 # Radici che indicano una sostanza pericolosa.
-RADICI_SOSTANZE = ["bombol", "serbatoi", "vernic", "solvent", "acid", "gas"]
+RADICI_SOSTANZE = [
+    "bombol", "serbatoi", "vernic", "solvent", "acid", "gas",
+    "benzin", "tanic", "gpl", "idrogen", "ossigen", "cloro", "propan",
+]
 
-NEGAZIONE = re.compile(r"\b(nessun\w*|niente|nulla)\b")
+# Negazioni: parole generiche oppure "non c'è / non ci sono / non risulta".
+NEGAZIONE = re.compile(r"\b(nessun\w*|niente|nulla)\b|\bnon (c'è|ci sono|ci sia|ci siano|risulta)\b")
 
-# Pattern per le persone, in ordine di priorità: l'incertezza prevale sulle affermazioni.
-PATTERN_INCERTE = [r"non sappiamo", r"forse", r"potrebbe esserci"]
-PATTERN_ASSENTI = [r"non c'è nessuno", r"tutti sono usciti", r"edificio è vuoto"]
-PATTERN_CONFERMATE = [r"intrappolat", r"bloccat", r"non riesc\w* a uscire"]
+# Persone: l'ordine di priorità conta. L'incertezza prevale, poi le assenze, poi le conferme.
+PATTERN_INCERTE = [r"non sappiamo", r"non si sa", r"forse", r"potrebbe esserci", r"pare ci sia", r"non è sicuro"]
+PATTERN_ASSENTI = [
+    r"non c'è nessuno",
+    r"nessuno dentro",
+    r"tutti (sono )?(usciti|fuori)",
+    r"edificio (è|risulta) (vuoto|sgombro)",
+]
+# Negazione diretta di una persona bloccata: "nessuno è intrappolato", "nessuno è rimasto dentro".
+PATTERN_NEGATE_CONFERMATE = re.compile(r"\bnessun\w* (è |sono )?(intrappolat|bloccat|rimast)")
+PATTERN_CONFERMATE = [r"intrappolat", r"bloccat", r"rimast\w* dentro", r"non riesc\w* a (uscire|scendere)"]
+
+# Meteo: calma prima di vento, altrimenti "non tira vento" diventerebbe vento forte.
+PATTERN_CALMO = re.compile(
+    r"aria (calma|ferma)|tempo (stabile|calmo)|calm|non (c'è|tira|ci sono|ci sia) vento|niente vento"
+)
 
 
 def _normalizza(testo: str) -> str:
@@ -79,6 +98,8 @@ def _sostanze(t: str) -> str:
 def _persone(t: str) -> str | None:
     if any(re.search(p, t) for p in PATTERN_INCERTE):
         return Persone.INCERTE.value
+    if PATTERN_NEGATE_CONFERMATE.search(t):
+        return Persone.ASSENTI.value
     if any(re.search(p, t) for p in PATTERN_ASSENTI):
         return Persone.ASSENTI.value
     if any(re.search(p, t) for p in PATTERN_CONFERMATE):
@@ -87,7 +108,7 @@ def _persone(t: str) -> str | None:
 
 
 def _meteo(t: str) -> str | None:
-    if re.search(r"non c'è vento|calm", t):
+    if PATTERN_CALMO.search(t):
         return Meteo.CALMO.value
     if "vento" in t:
         return Meteo.VENTO_FORTE.value

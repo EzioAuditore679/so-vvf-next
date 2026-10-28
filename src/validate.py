@@ -106,7 +106,9 @@ def valuta(righe: list[dict]) -> tuple[dict, list[dict]]:
 
 
 if __name__ == "__main__":
-    righe = leggi(config.DATA_DIR / "gold_set.csv")
+    # Uso: python src/validate.py [gold|dev]   (default: gold)
+    nome = sys.argv[1] if len(sys.argv) > 1 else "gold"
+    righe = leggi(config.DATA_DIR / f"{nome}_set.csv")
 
     problemi = controlla_integrita(righe)
     if problemi:
@@ -119,9 +121,9 @@ if __name__ == "__main__":
     risultati, errori = valuta(righe)
 
     config.RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with (config.RESULTS_DIR / "metrics_nlp_gold.json").open("w", encoding="utf-8") as f:
+    with (config.RESULTS_DIR / f"metrics_nlp_{nome}.json").open("w", encoding="utf-8") as f:
         json.dump(risultati, f, ensure_ascii=False, indent=2)
-    with (config.RESULTS_DIR / "errori_nlp_gold.csv").open("w", newline="", encoding="utf-8") as f:
+    with (config.RESULTS_DIR / f"errori_nlp_{nome}.csv").open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["id", "campo", "vero", "predetto", "testo"])
         writer.writeheader()
         writer.writerows(errori)
@@ -130,4 +132,4 @@ if __name__ == "__main__":
     for campo, m in risultati.items():
         f1 = m.get("f1_macro", float("nan"))
         print(f"{campo:22s} {m['accuracy']:9.3f} {f1:9.3f}")
-    print(f"\nErrori totali: {len(errori)} (dettaglio in results/errori_nlp_gold.csv)")
+    print(f"\nInsieme: {nome}. Errori totali: {len(errori)} (dettaglio in results/errori_nlp_{nome}.csv)")
