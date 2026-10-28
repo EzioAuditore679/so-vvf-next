@@ -47,6 +47,12 @@ class Meteo(str, Enum):
     CALMO = "calmo"
 
 
+class Vulnerabilita(str, Enum):
+    """Vulnerabilità strutturale della zona: fatto del registro territoriale, nascosto nella chiamata."""
+    ALTA = "alta"
+    BASSA = "bassa"
+
+
 class TipoMezzo(str, Enum):
     AUTOPOMPA = "autopompa"          # APS / autopompa serbatoio
     AUTOSCALA = "autoscala"
@@ -97,6 +103,7 @@ SOGLIA_PIANI_AUTOSCALA = 4
 # Assunzione dichiarata: P(Critico) > soglia => gravità operativa "critica".
 SOGLIA_PROB_CRITICO = 0.7
 
-# Velocità massima ammessa sulla griglia (unità arbitraria di distanza per unità di tempo).
-# Usata per h(n) = distanza_euclidea / V_MAX_GRIGLIA, con V_MAX_GRIGLIA = velocità massima di qualunque arco.
+# Velocità massima della griglia: denominatore dell'euristica del livello 1 (A* spaziale),
+# h = distanza_euclidea / V_MAX_GRIGLIA. Deve essere >= alla velocità di ogni arco,
+# altrimenti h non è ammissibile.
 V_MAX_GRIGLIA = 1.0

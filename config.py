@@ -16,6 +16,7 @@ N_TESTI_SINTETICI = 1000
 N_GOLD_SET = 100                 # etichettati a mano, mai usati in addestramento
 QUOTA_TEST = 0.2                 # frazione del dataset sintetico riservata al test
 N_FOLD_CV = 5                    # stratified k-fold per il ML
+RUMORE_GRAVITA = 0.12            # probabilità che l'etichetta osservata si sposti di un livello (assunzione dichiarata)
 
 # Ricerca nello spazio degli stati (dispatch dei mezzi)
 # Le distanze tra stazioni e incidenti vengono da una griglia con ostacoli.
