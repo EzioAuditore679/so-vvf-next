@@ -69,18 +69,20 @@ class Campo(str, Enum):
 # Il gold set manuale NON usa solo queste parole, per evitare un test circolare.
 PAROLE_CHIAVE: dict[Campo, dict[Enum, list[str]]] = {
     Campo.TIPO_EDIFICIO: {
-        TipoEdificio.RESIDENZIALE: ["palazzina", "condominio", "appartamento", "abitazione"],
-        TipoEdificio.INDUSTRIALE: ["capannone", "stabilimento", "impianto industriale", "deposito"],
-        TipoEdificio.BOSCO: ["bosco", "sterpaglie", "pineta", "area boschiva"],
+        TipoEdificio.RESIDENZIALE: ["una palazzina", "un condominio", "un appartamento"],
+        TipoEdificio.INDUSTRIALE: ["un capannone", "uno stabilimento", "un deposito"],
+        TipoEdificio.BOSCO: ["un bosco", "delle sterpaglie", "una pineta"],
     },
+    # Le espressioni sono frasi complete, così il generatore le inserisce senza errori grammaticali.
+    # L'estrattore NLP cercherà le stesse radici, non le frasi intere.
     Campo.SOSTANZE_PERICOLOSE: {
-        SostanzePericolose.SI: ["bombole", "serbatoio", "gas", "solventi", "acido", "vernici"],
-        SostanzePericolose.NO: ["nessuna sostanza", "niente sostanze", "nessun rischio chimico"],
+        SostanzePericolose.SI: ["bombole di gas", "un serbatoio", "delle vernici", "dei solventi", "dell'acido"],
+        SostanzePericolose.NO: ["nessuna sostanza pericolosa", "niente sostanze pericolose", "nessun rischio chimico"],
     },
     Campo.PERSONE: {
-        Persone.CONFERMATE: ["intrappolat", "bloccat", "non riesce a uscire"],
-        Persone.INCERTE: ["forse", "non sappiamo", "potrebbe esserci"],
-        Persone.ASSENTI: ["nessuno dentro", "tutti usciti", "nessuno ferito"],
+        Persone.CONFERMATE: ["ci sono persone intrappolate", "c'è qualcuno bloccato", "qualcuno non riesce a uscire"],
+        Persone.INCERTE: ["non sappiamo se ci sia qualcuno", "forse c'è qualcuno dentro", "potrebbe esserci qualcuno"],
+        Persone.ASSENTI: ["non c'è nessuno dentro", "tutti sono usciti", "l'edificio è vuoto"],
     },
 }
 
