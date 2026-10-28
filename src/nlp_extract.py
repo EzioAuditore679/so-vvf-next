@@ -4,6 +4,9 @@ Il lessico di questo modulo è definito qui, separato da PAROLE_CHIAVE di
 domain.py che il generatore usa per produrre i testi. Così il risultato non
 dipende dalle stesse frasi usate per generare il dataset.
 
+Ruolo nel progetto: adattatore di ingresso, non oggetto di valutazione nella
+relazione (le linee guida escludono NLP come caso centrale).
+
 Versione 2: lessico e pattern ampliati sul dev set (data/dev_set.csv).
 Il gold set (data/gold_set.csv) è stato usato anche per analizzare gli errori,
 quindi il suo risultato non è più completamente indipendente: va dichiarato.

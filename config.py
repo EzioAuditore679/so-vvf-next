@@ -17,11 +17,14 @@ N_GOLD_SET = 100                 # etichettati a mano, mai usati in addestrament
 QUOTA_TEST = 0.2                 # frazione del dataset sintetico riservata al test
 N_FOLD_CV = 5                    # stratified k-fold per il ML
 
-# Griglia di ricerca
+# Ricerca nello spazio degli stati (dispatch dei mezzi)
+# Le distanze tra stazioni e incidenti vengono da una griglia con ostacoli.
 DIM_GRIGLIA = (20, 20)           # righe, colonne
 PROB_OSTACOLO = 0.2              # frazione di celle bloccate
-N_ISTANZE_RICERCA = 30           # coppie partenza/arrivo per il confronto
-SOGLIA_COPERTURA = 15.0          # tempo massimo di raggiungibilità di un settore (unità di tempo)
+N_INCIDENTI_SCENARI = [2, 3, 4, 5, 6]  # dimensioni crescenti per il confronto BFS / UCS / A*
+N_MEZZI_PER_INCIDENTE = 1.5      # mezzi disponibili = ceil(incidenti * questo valore)
+N_SCENARI_PER_DIMENSIONE = 20    # ripetizioni per dimensione: si riportano media ± dev. std
+LIMITE_NODI = 500_000            # oltre questo numero di nodi generati la ricerca si interrompe e il caso è segnato come non completato
 
 # Percorsi
 DATA_DIR = ROOT / "data"

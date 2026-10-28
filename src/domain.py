@@ -1,8 +1,11 @@
 """Vocabolario unico del dominio SO-VVF-NEXT.
 
-Fonte di verità per generatore di dataset, estrattore NLP, ontologia OWL,
-knowledge base Prolog, rete bayesiana e CSP. Ogni modulo importa da qui,
-così le etichette non possono divergere tra un componente e l'altro.
+Fonte di verità per generatore di dataset, adattatore NLP, knowledge base
+Prolog, rete bayesiana, ricerca nello spazio degli stati e ML. Ogni modulo
+importa da qui, così le etichette non possono divergere tra un componente e l'altro.
+
+Non c'è ontologia OWL né reasoner: la rappresentazione è relazionale (Prolog),
+come da decisione del 28/10.
 """
 
 from enum import Enum
@@ -20,9 +23,10 @@ class SostanzePericolose(str, Enum):
 
 
 class Gravita(str, Enum):
+    """Etichetta di gravità a tre livelli. Le regole che la definiscono vanno dichiarate
+    in knowledge_base/kb.pl: la definizione è una regola di dominio esplicita, non un'etichetta libera."""
     CRITICO = "critico"
     ALTO = "alto"
-    MEDIO = "medio"
     BASSO = "basso"
 
 
