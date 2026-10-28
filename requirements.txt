@@ -1,6 +1,4 @@
-# Dipendenze di SO-VVF-NEXT (Python 3.10+)
-# Installazione: pip install -r requirements.txt
-# Richiede anche SWI-Prolog installato nel sistema (per pyswip).
+# Dipendenze di SO-VVF-NEXT 
 
 # Calcolo numerico e dati
 numpy>=1.26

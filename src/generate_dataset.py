@@ -5,8 +5,6 @@ riempitivi, abbreviazioni, punteggiatura assente) e i valori veri dei campi.
 nlp_extract.py dovrà ricavare i campi dal solo testo; i valori veri servono
 solo a validate.py per misurare l'accuratezza dell'estrazione.
 
-Esecuzione dalla radice del progetto:
-    python src/generate_dataset.py
 """
 
 import csv
@@ -15,13 +13,13 @@ import re
 import sys
 from collections import Counter
 from pathlib import Path
+import config 
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import config  # noqa: E402
-from domain import (  # noqa: E402
+from domain import (  
     PAROLE_CHIAVE,
     Campo,
     Meteo,
