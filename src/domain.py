@@ -14,6 +14,11 @@ class TipoEdificio(str, Enum):
     BOSCO = "bosco"
 
 
+class SostanzePericolose(str, Enum):
+    SI = "si"
+    NO = "no"
+
+
 class Gravita(str, Enum):
     CRITICO = "critico"
     ALTO = "alto"
@@ -51,17 +56,32 @@ class Equipaggiamento(str, Enum):
     AUTORESPIRATORE = "autorespiratore"
 
 
+class Campo(str, Enum):
+    """Campi estratti dal testo della chiamata. Ogni campo ha un proprio enum di valori."""
+    TIPO_EDIFICIO = "tipo_edificio"
+    SOSTANZE_PERICOLOSE = "sostanze_pericolose"
+    PERSONE = "persone"
+
+
 # Parole chiave usate dal generatore e dall'estrattore NLP.
-# Ogni valore è una lista di espressioni italiane che indicano il valore.
-# Il generatore sceglie da qui; l'estrattore cerca le stesse espressioni.
+# Struttura: Campo -> valore del campo -> lista di espressioni italiane.
+# Tutte le chiavi interne sono membri degli enum sopra, mai stringhe libere.
 # Il gold set manuale NON usa solo queste parole, per evitare un test circolare.
-PAROLE_CHIAVE = {
-    TipoEdificio.RESIDENZIALE: ["palazzina", "condominio", "appartamento", "abitazione"],
-    TipoEdificio.INDUSTRIALE: ["capannone", "stabilimento", "impianto industriale", "deposito"],
-    TipoEdificio.BOSCO: ["bosco", "sterpaglie", "pineta", "area boschiva"],
-    "sostanze_pericolose_si": ["bombole", "serbatoio", "gas", "solventi", "acido", "vernici"],
-    "persone_intrappolate_si": ["intrappolat", "bloccat", "non riesce a uscire", "dentro"],
-    "persone_intrappolate_incerte": ["forse", "non sappiamo", "potrebbe esserci"],
+PAROLE_CHIAVE: dict[Campo, dict[Enum, list[str]]] = {
+    Campo.TIPO_EDIFICIO: {
+        TipoEdificio.RESIDENZIALE: ["palazzina", "condominio", "appartamento", "abitazione"],
+        TipoEdificio.INDUSTRIALE: ["capannone", "stabilimento", "impianto industriale", "deposito"],
+        TipoEdificio.BOSCO: ["bosco", "sterpaglie", "pineta", "area boschiva"],
+    },
+    Campo.SOSTANZE_PERICOLOSE: {
+        SostanzePericolose.SI: ["bombole", "serbatoio", "gas", "solventi", "acido", "vernici"],
+        SostanzePericolose.NO: ["nessuna sostanza", "niente sostanze", "nessun rischio chimico"],
+    },
+    Campo.PERSONE: {
+        Persone.CONFERMATE: ["intrappolat", "bloccat", "non riesce a uscire"],
+        Persone.INCERTE: ["forse", "non sappiamo", "potrebbe esserci"],
+        Persone.ASSENTI: ["nessuno dentro", "tutti usciti", "nessuno ferito"],
+    },
 }
 
 # Soglia di altezza (in piani) sopra cui serve l'autoscala. Assunzione dichiarata.
