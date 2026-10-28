@@ -4,9 +4,6 @@ Il lessico di questo modulo è definito qui, separato da PAROLE_CHIAVE di
 domain.py che il generatore usa per produrre i testi. Così il risultato non
 dipende dalle stesse frasi usate per generare il dataset.
 
-Uso:
-    from nlp_extract import estrai_campi
-    estrai_campi("Segnalo un incendio in un capannone al terzo p. ...")
 """
 
 import csv
