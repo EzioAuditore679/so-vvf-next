@@ -19,12 +19,12 @@ Dato un insieme di incidenti attivi e una flotta di mezzi distribuiti in stazion
    - Complessità di `kb.pl` misurata con `KnowledgeBase().complessita()`: 16 predicati, 21 regole con corpo, 25 clausole. La profondità della ricorsione di `collegato/2` è al massimo il numero di incidenti dello scenario.
    - I fatti di scenario (incidenti, mezzi, registro, velocità) vengono asseriti da Python per ogni scenario. Le regole restano fisse nel file.
 
-3. **Ricerca a due livelli**:
-   - **Livello 1, distanze** (`src/search.py`): A\* sulla griglia 20×20 con ostacoli calcola il tempo minimo $T(m, i)$ tra ogni mezzo e ogni incidente. Euristica $h = d_{\text{euclidea}} / V_{\max}$, con $V_{\max}$ maggiore o uguale alla velocità di ogni arco, quindi ammissibile. Il costo è verificato contro Dijkstra su tutti i casi di test.
-   - **Livello 2, dispatch** (stesso modulo): stato = assegnazioni incidente-mezzo già fatte; azione = assegnare un mezzo idoneo e libero a un incidente non servito; obiettivo = tutti gli incidenti serviti; costo = somma dei tempi $T(m, i)$. Algoritmi confrontati: **BFS** e **UCS** (non informate) contro **A\*** con due euristiche:
-     - $h_{\min}$ = somma, per ogni incidente rimasto, del minimo tempo verso un mezzo libero. Ammissibile, più debole.
-     - $h_{\text{Hungarian}}$ = costo ottimo dell'assegnamento dei rimanenti incidenti ai mezzi liberi (`scipy.optimize.linear_sum_assignment`). Ottenuta rimuovendo l'ordine delle assegnazioni e mantenendo l'esclusività dei mezzi, è un limite inferiore più stretto: domina $h_{\min}$, quindi espande meno nodi a parità di ammissibilità.
-     - Entrambe ammissibili e consistenti. I risultati sono riportati come media ± deviazione standard su più scenari per ogni dimensione.
+3. **Ricerca a due livelli** (`src/search.py`, dimostrazioni in `docs/ricerca.md`):
+   - **Livello 1, distanze**: sulla griglia $20 \times 20$ con ostacoli, A\* con euristica di Manhattan calcola la distanza tra ogni stazione e ogni incidente. Manhattan è la soluzione esatta del problema senza ostacoli, quindi ammissibile e consistente. Verificata contro le distanze esatte.
+   - **Livello 2, dispatch**: stato = insieme delle assegnazioni incidente-mezzo; azione = assegnare un mezzo idoneo e libero a un incidente non servito; costo = $\max(T(m,i), 1)$, con $\varepsilon = 1$ per la Proposizione 2.1. Algoritmi: **LcFS** (ricerca a costo uniforme, non informata) contro **A\*** con due euristiche da problemi semplificati:
+     - $h_{\min}$: si rimuove l'esclusività dei mezzi; minimo statico per incidente.
+     - $h_{\text{libero}}$: esclusività solo tra incidenti residui; ammessi solo i mezzi liberi.
+     - Entrambe ammissibili e consistenti (dimostrazioni nella documentazione). I risultati sono medie ± deviazione standard su 20 scenari per dimensione.
 
 4. **Rete bayesiana** (`src/bayes_engine.py`): 8 nodi: Tipo, Piano, Sostanze, Meteo, Velocità del fuoco, Persone, Vulnerabilità, Gravità. Velocità e vulnerabilità sono latenti per il modello di inferenza. CPT stimate per massima verosimiglianza con pseudoconteggi di Laplace. Produce la probabilità di gravità critica, calcolata dentro ogni fold.
 
@@ -56,7 +56,8 @@ so-vvf-next/
 ├── requirements.txt
 ├── config.py                  # seme, dimensioni, rumore, percorsi
 ├── docs/
-│   └── modello_generativo.md  # grafo causale, probabilità, limiti
+│   ├── modello_generativo.md  # grafo causale, probabilità, limiti
+│   └── ricerca.md             # rappresentazione, euristiche, dimostrazioni, risultati
 ├── data/
 │   ├── dataset_sintetico.csv  # generato da generate_dataset.py
 │   ├── dev_set.csv            # per tarare l'adattatore NLP
@@ -67,7 +68,8 @@ so-vvf-next/
 │   └── kb_statica.pl          # soglie e punteggi, generato da prolog_export.py
 ├── results/                   # metriche, errori, storico
 ├── tests/
-│   └── test_prolog.py         # coerenza KB/regola Python, idoneità, abduzione, ricorsione, integrità
+│   ├── test_prolog.py         # coerenza KB/regola Python, idoneità, abduzione, ricorsione, integrità
+│   └── test_search.py         # ammissibilità, consistenza, ottimalità delle euristiche
 └── src/
     ├── domain.py              # vocabolario unico del dominio
     ├── modello_generativo.py  # grafo causale e regola di gravità
@@ -77,7 +79,7 @@ so-vvf-next/
     ├── prolog_export.py       # genera kb_statica.pl dalle costanti Python
     ├── prolog_engine.py       # interfaccia pyswip verso kb.pl
     ├── bayes_engine.py        # rete bayesiana (da scrivere)
-    ├── search.py              # A* spaziale, dispatch: BFS, UCS, A* (da scrivere)
+    ├── search.py              # ricerca su griglia e dispatch: LcFS, A*
     ├── train_models.py        # nested CV, esperimenti A e B (da scrivere)
     └── main.py                # pipeline completa (da scrivere)
 ```
@@ -98,7 +100,8 @@ python -c "import pyswip; print('ok')"
 ```
 python src/generate_dataset.py
 python src/validate.py test
-python -m pytest tests/        # include il controllo di coerenza tra KB Prolog e regola Python
+python -m pytest tests/        # KB Prolog, ricerca: ammissibilità, consistenza, ottimalità
+python src/search.py           # confronto LcFS e A* sul dispatch
 ```
 
 ## Stato di avanzamento
@@ -107,7 +110,7 @@ python -m pytest tests/        # include il controllo di coerenza tra KB Prolog 
 - [x] Adattatore NLP con dev, gold e test set
 - [x] Knowledge base Prolog, con test di coerenza con `regola_gravita` (`tests/test_prolog.py`)
 - [ ] Rete bayesiana
-- [ ] Ricerca: A* spaziale, dispatch con BFS, UCS, A* ($h_{\min}$ e $h_{\text{Hungarian}}$)
+- [x] Ricerca: distanze A* su griglia, dispatch con LcFS e A* ($h_{\min}$ e $h_{\text{libero}}$), test e confronto
 - [ ] Machine learning con nested CV, esperimenti A e B
 - [ ] Analisi di sensitività (CPT apprese contro esperti, rumore 0.05 / 0.12 / 0.20)
 - [ ] Grafici e pipeline principale

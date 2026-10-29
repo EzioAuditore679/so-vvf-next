@@ -3,7 +3,6 @@
 # Calcolo numerico e dati
 numpy>=1.26
 pandas>=2.2
-scipy>=1.13          # linear_sum_assignment (algoritmo ungherese) per l'euristica
 
 # Machine learning e valutazione
 scikit-learn>=1.5

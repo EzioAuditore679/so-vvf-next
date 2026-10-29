@@ -93,7 +93,3 @@ SOGLIA_PIANI_AUTOSCALA = 4
 # Soglia di probabilità per trasformare la distribuzione della rete bayesiana in decisione.
 # Assunzione dichiarata: P(Critico) > soglia => gravità operativa "critica".
 SOGLIA_PROB_CRITICO = 0.7
-
-# Denominatore dell'euristica di A* spaziale: h = distanza_euclidea / V_MAX_GRIGLIA.
-# Deve essere >= alla velocità di ogni arco, altrimenti h non è ammissibile.
-V_MAX_GRIGLIA = 1.0
