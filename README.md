@@ -42,9 +42,9 @@ La catena completa è: testo della chiamata → campi → gravità stimata → s
 ## Decisioni di progetto
 
 - **Gravità a tre livelli** (critico, alto, basso), definita da una regola esplicita, scritta in Prolog.
-- **Nessun reasoner OWL e nessun esportatore OWL.** La rappresentazione è relazionale in Prolog. La corrispondenza con una tassonomia di concetti è descritta nella documentazione, senza implementazione OWL.
+- **Nessun reasoner OWL e nessun esportatore OWL.** La rappresentazione è relazionale in Prolog: le regole del dominio (squadra, propagazione, abduzione, integrità) richiedono ricorsione, negazione per fallimento e aritmetica, mentre una tassonomia di concetti non aggiungerebbe ragionamento utile al problema. La motivazione è nella relazione.
 - **CSP** formulato come assegnazione: variabili = ruoli richiesti dagli incidenti, domini = mezzi adatti forniti da Prolog più il valore *scoperto*, vincolo = esclusività del mezzo. È risolto dalla ricerca nello spazio degli stati, con ordine MRV delle variabili.
-- **Dati generati da un modello causale**, non da campionamento indipendente. Le probabilità sono assunzioni dichiarate, con analisi di sensitività.
+- **Dati generati da un modello causale**, non da campionamento indipendente. Le probabilità sono assunzioni dichiarate, con analisi di sensibilità.
 - **NLP** limitato all'adattatore di ingresso. Le sue prove restano in `results/` come controllo di funzionamento.
 - **Esclusi**: clustering (non utile, i dati sono già classificati) e reti neurali (fuori dal nucleo del programma).
 

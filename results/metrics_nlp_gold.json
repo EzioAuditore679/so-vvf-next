@@ -6,140 +6,24 @@
     "accuracy": 0.99,
     "precision_macro": 1.0,
     "recall_macro": 0.98989898989899,
-    "f1_macro": 0.9948717948717949,
-    "matrice_confusione": {
-      "etichette": [
-        "bosco",
-        "industriale",
-        "residenziale",
-        "nessuno"
-      ],
-      "matrice": [
-        [
-          32,
-          0,
-          0,
-          1
-        ],
-        [
-          0,
-          33,
-          0,
-          0
-        ],
-        [
-          0,
-          0,
-          34,
-          0
-        ],
-        [
-          0,
-          0,
-          0,
-          0
-        ]
-      ]
-    }
+    "f1_macro": 0.9948717948717949
   },
   "sostanze_pericolose": {
     "accuracy": 0.98,
     "precision_macro": 0.9796001631986944,
     "recall_macro": 0.9796001631986944,
-    "f1_macro": 0.9796001631986944,
-    "matrice_confusione": {
-      "etichette": [
-        "no",
-        "si",
-        "nessuno"
-      ],
-      "matrice": [
-        [
-          42,
-          1,
-          0
-        ],
-        [
-          1,
-          56,
-          0
-        ],
-        [
-          0,
-          0,
-          0
-        ]
-      ]
-    }
+    "f1_macro": 0.9796001631986944
   },
   "persone": {
     "accuracy": 0.98,
     "precision_macro": 0.990990990990991,
     "recall_macro": 0.9790849673202615,
-    "f1_macro": 0.9848089480621042,
-    "matrice_confusione": {
-      "etichette": [
-        "assenti",
-        "confermate",
-        "incerte",
-        "nessuno"
-      ],
-      "matrice": [
-        [
-          29,
-          0,
-          0,
-          1
-        ],
-        [
-          0,
-          36,
-          0,
-          0
-        ],
-        [
-          0,
-          1,
-          33,
-          0
-        ],
-        [
-          0,
-          0,
-          0,
-          0
-        ]
-      ]
-    }
+    "f1_macro": 0.9848089480621042
   },
   "meteo": {
     "accuracy": 1.0,
     "precision_macro": 1.0,
     "recall_macro": 1.0,
-    "f1_macro": 1.0,
-    "matrice_confusione": {
-      "etichette": [
-        "calmo",
-        "vento_forte",
-        "nessuno"
-      ],
-      "matrice": [
-        [
-          50,
-          0,
-          0
-        ],
-        [
-          0,
-          50,
-          0
-        ],
-        [
-          0,
-          0,
-          0
-        ]
-      ]
-    }
+    "f1_macro": 1.0
   }
 }

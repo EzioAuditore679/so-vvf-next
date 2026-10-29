@@ -128,9 +128,6 @@ def genera_griglia(rng: random.Random, righe: int, colonne: int, p_ostacolo: flo
 
 # --- Livello 2: dispatch per ruoli ------------------------------------------
 
-Ruolo = tuple[str, str]  # (incidente, ruolo)
-
-
 @dataclass
 class Scenario:
     ruoli: tuple        # ruoli da coprire, nell'ordine di assegnazione (vedi ordina_ruoli)

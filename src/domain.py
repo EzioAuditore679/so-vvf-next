@@ -55,12 +55,6 @@ class TipoMezzo(str, Enum):
     CANADAIR = "canadair"
 
 
-class Equipaggiamento(str, Enum):
-    TUTA_HAZMAT = "tuta_hazmat"
-    RILEVATORE_GAS = "rilevatore_gas"
-    AUTORESPIRATORE = "autorespiratore"
-
-
 class Campo(str, Enum):
     """Campi estratti dal testo della chiamata."""
     TIPO_EDIFICIO = "tipo_edificio"
@@ -89,7 +83,3 @@ PAROLE_CHIAVE: dict[Campo, dict[Enum, list[str]]] = {
 
 # Altezza in piani oltre la quale serve l'autoscala. Assunzione dichiarata.
 SOGLIA_PIANI_AUTOSCALA = 4
-
-# Soglia di probabilità per trasformare la distribuzione della rete bayesiana in decisione.
-# Assunzione dichiarata: P(Critico) > soglia => gravità operativa "critica".
-SOGLIA_PROB_CRITICO = 0.7

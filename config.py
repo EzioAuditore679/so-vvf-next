@@ -8,8 +8,6 @@ SEME = 42
 
 # Dataset
 N_TESTI_SINTETICI = 1000
-N_GOLD_SET = 100
-QUOTA_TEST = 0.2
 N_FOLD_CV = 5
 RUMORE_GRAVITA = 0.12  # probabilità che l'etichetta osservata si sposti di un livello. Assunzione dichiarata.
 LAPLACE_ALPHA = 1.0  # pseudoconteggio per cella delle CPT della rete bayesiana
@@ -37,6 +35,5 @@ SEME_E2E = SEME + 1000  # scenari indipendenti dal dataset di addestramento
 # Percorsi
 DATA_DIR = ROOT / "data"
 KB_DIR = ROOT / "knowledge_base"
-MODELS_DIR = ROOT / "models"
 RESULTS_DIR = ROOT / "results"
 PLOTS_DIR = ROOT / "plots"

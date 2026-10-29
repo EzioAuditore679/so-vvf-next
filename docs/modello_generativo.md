@@ -23,8 +23,8 @@ Persone, Velocità, Sostanze, Vulnerabilità, Adiacenti ──► Gravità  (+ r
 | Meteo | sì | — | P(vento forte) = 0.40 |
 | Velocità del fuoco | **no (nascosta)** | Meteo, Sostanze | tabella a 4 righe, vedi sotto |
 | Persone | sì | Tipo, Piano | confermate crescono con il piano, tetto 0.65 |
-| Vulnerabilità della zona | **no (nascosta)** | — | P(alta) = 0.30; fatto del registro territoriale |
-| Edifici adiacenti | **no (nascosta)** | — | 0, 1, 2, 3 con 0.40, 0.30, 0.20, 0.10 |
+| Vulnerabilità della zona | no, ma nota dal registro | — | P(alta) = 0.30; fatto del registro territoriale |
+| Edifici adiacenti | no, ma noto dal registro | — | 0, 1, 2, 3 con 0.40, 0.30, 0.20, 0.10 |
 | Gravità | no (target) | Persone, Velocità, Sostanze, Vulnerabilità, Adiacenti | regola più rumore |
 
 ### Velocità del fuoco, condizionata a meteo e sostanze
@@ -55,26 +55,32 @@ modellata del mondo reale.
 |---|---|---|
 | **Estrattore NLP** (adattatore) | testo della chiamata | tutto il resto |
 | **ML, esperimento A** | tipo, piano, sostanze, persone, meteo (dal testo) | velocità, vulnerabilità, adiacenti |
-| **ML, esperimento B** | A + vulnerabilità e adiacenti dalla KB + probabilità della rete bayesiana | velocità del fuoco |
-| **Rete bayesiana** | osservabili come evidenze; velocità e vulnerabilità come latenti | adiacenti (non modellato, vedi limiti) |
-| **Knowledge base Prolog** | fatti del registro (vulnerabilità, adiacenti) e osservabili | rumore dell'etichetta |
+| **ML, esperimento B** | A + vulnerabilità e adiacenti dal registro + P(critico) della rete bayesiana | velocità del fuoco |
+| **ML, controllo C** | come B, senza la rete | velocità del fuoco |
+| **ML, oracolo** | come C, più la velocità vera (non disponibile a runtime) | rumore dell'etichetta |
+| **Rete bayesiana** | osservabili dal testo e vulnerabilità come evidenze; velocità del fuoco latente | adiacenti (non modellato, vedi limiti) |
+| **Knowledge base Prolog** | osservabili, fatti del registro, velocità stimata o gravità stimata da una fonte esterna | rumore dell'etichetta |
+| **Dispatch** (`valutazione_dispatch.py`) | la squadra derivata dalla KB con la gravità di una fonte | la gravità vera, usata solo per giudicare il piano |
 
 ## Regola anti-leakage
 
 Il punteggio della regola di gravità **non va mai passato al modello ML come feature**: coincide
 con il target a meno del rumore, e il modello apparirebbe perfetto senza imparare nulla.
-La KB fornisce al ML solo i fatti di base (vulnerabilità, adiacenti). Le CPT della rete bayesiana
-sono stimate solo sui dati di training di ciascun fold di cross-validation.
+Il ML riceve dal registro solo i fatti di base (vulnerabilità, adiacenti). Le CPT della rete bayesiana
+sono stimate solo sui dati di training di ciascun fold di cross-validation, e P(critico) per le righe
+di training è calcolata fuori fold (cross-fitting).
 
 ## Limiti da dichiarare
 
 1. **Dati sintetici.** Le probabilità sono assunzioni scelte a mano, non stime da dati reali.
    Qualunque risultato dipende da queste scelte.
 2. **Circolarità delle CPT.** La rete bayesiana stimata sui dati recupera le probabilità del
-   generatore. Per questo si confrontano le CPT apprese con CPT definite da esperti (analisi di sensitività).
+   generatore, che non è un esperto indipendente ma la fonte stessa dei dati. L'analisi di sensibilità
+   (`src/sensitivita.py`) misura quanto bene lo stimatore le recupera (errore medio 0.054 con 1000 righe,
+   0.042 con 20 000), non se sono corrette per il mondo reale.
 3. **Adiacenti non modellato nella rete bayesiana.** La variabile è nel generatore e nella KB,
    ma non nella rete: il limite va riportato.
-4. **Rumore arbitrario.** Il valore 0.12 è una scelta. La sensitività su 0.05, 0.12 e 0.20
+4. **Rumore arbitrario.** Il valore 0.12 è una scelta. L'analisi di sensibilità su 0.05, 0.12 e 0.20
    mostra quanto il risultato dipende dal rumore.
 5. **Testo e campi osservabili.** Il testo è generato dai campi osservabili con template e
    rumore del parlato: l'estrattore NLP lavora su testi che il generatore ha costruito, quindi i suoi

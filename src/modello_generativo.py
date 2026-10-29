@@ -10,7 +10,7 @@ Variabili nascoste (non compaiono nel testo della chiamata): velocità del fuoco
 vulnerabilità della zona, numero di edifici adiacenti.
 
 Tutte le probabilità sono assunzioni dichiarate, scelte a mano. Vanno documentate in
-docs/modello_generativo.md e sottoposte ad analisi di sensitività.
+docs/modello_generativo.md e sottoposte ad analisi di sensibilità.
 """
 
 import random

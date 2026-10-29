@@ -1,7 +1,9 @@
 """Validazione di un insieme di test (gold, dev o test) per l'estrattore NLP.
 
 1. Integrità del file: colonne, valori ammessi, id unici.
-2. Valutazione di estrai_campi(): accuratezza, precisione, recall, F1 macro e matrice di confusione.
+2. Valutazione di estrai_campi(): accuratezza, precisione, recall e F1 macro, più la lista
+   degli errori uno per uno (results/errori_nlp_*.csv). L'estrattore è a regole e deterministico:
+   gli errori elencati dicono più di una matrice di confusione.
 
 Uso: python src/validate.py [gold|dev|test]   (default: gold)
 """
@@ -20,7 +22,6 @@ from domain import Meteo, Persone, SostanzePericolose, TipoEdificio  # noqa: E40
 from nlp_extract import estrai_campi  # noqa: E402
 from sklearn.metrics import (  # noqa: E402
     accuracy_score,
-    confusion_matrix,
     precision_recall_fscore_support,
 )
 
@@ -80,16 +81,11 @@ def valuta(righe: list[dict]) -> tuple[dict, list[dict]]:
         precisione, recall, f1, _ = precision_recall_fscore_support(
             veri, pred, labels=etichette, average="macro", zero_division=0
         )
-        matrice = confusion_matrix(veri, pred, labels=etichette + [ETICHETTA_ASSENTE])
         risultati[campo] = {
             "accuracy": accuracy_score(veri, pred),
             "precision_macro": precisione,
             "recall_macro": recall,
             "f1_macro": f1,
-            "matrice_confusione": {
-                "etichette": etichette + [ETICHETTA_ASSENTE],
-                "matrice": matrice.tolist(),
-            },
         }
         for p, r, v, q in zip(predizioni, righe, veri, pred):
             if v != q:
