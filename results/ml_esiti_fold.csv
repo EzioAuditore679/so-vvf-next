@@ -1,0 +1,81 @@
+esperimento,modello,fold,accuracy,f1_macro,parametri
+A,baseline_maggioranza,0,0.47,0.21315192743764175,{}
+A,regressione_logistica,0,0.685,0.6603070175438597,{'clf__C': 1}
+A,random_forest,0,0.685,0.6594347821304027,{'clf__max_depth': 3}
+A,naive_bayes,0,0.645,0.6095659644404602,{'clf__alpha': 1}
+A,baseline_maggioranza,1,0.47,0.21315192743764175,{}
+A,regressione_logistica,1,0.69,0.6929408040519153,{'clf__C': 10}
+A,random_forest,1,0.695,0.6988790529754855,{'clf__max_depth': 6}
+A,naive_bayes,1,0.675,0.6742707675474948,{'clf__alpha': 1}
+A,baseline_maggioranza,2,0.465,0.21160409556313994,{}
+A,regressione_logistica,2,0.645,0.6126732327694339,{'clf__C': 10}
+A,random_forest,2,0.655,0.6259765410092207,{'clf__max_depth': 6}
+A,naive_bayes,2,0.615,0.5752361115702934,{'clf__alpha': 1}
+A,baseline_maggioranza,3,0.465,0.21160409556313994,{}
+A,regressione_logistica,3,0.735,0.6956922162804516,{'clf__C': 10}
+A,random_forest,3,0.71,0.6645607260403428,{'clf__max_depth': 6}
+A,naive_bayes,3,0.73,0.694301438117387,{'clf__alpha': 0.1}
+A,baseline_maggioranza,4,0.465,0.21160409556313994,{}
+A,regressione_logistica,4,0.725,0.6942580776600717,{'clf__C': 10}
+A,random_forest,4,0.715,0.6971088909973767,{'clf__max_depth': 6}
+A,naive_bayes,4,0.71,0.6726607894209576,{'clf__alpha': 0.1}
+B,baseline_maggioranza,0,0.47,0.21315192743764175,{}
+B,regressione_logistica,0,0.735,0.6755698005698005,{'clf__C': 10}
+B,random_forest,0,0.71,0.6744732712277539,{'clf__max_depth': 6}
+B,naive_bayes,0,0.695,0.6699730257864965,{'clf__alpha': 1}
+B,baseline_maggioranza,1,0.47,0.21315192743764175,{}
+B,regressione_logistica,1,0.75,0.7293954707377205,{'clf__C': 10}
+B,random_forest,1,0.715,0.7086241718597833,{'clf__max_depth': 6}
+B,naive_bayes,1,0.755,0.7391971633457701,{'clf__alpha': 0.1}
+B,baseline_maggioranza,2,0.465,0.21160409556313994,{}
+B,regressione_logistica,2,0.735,0.6918752516726806,{'clf__C': 1}
+B,random_forest,2,0.695,0.6564641430975876,{'clf__max_depth': 6}
+B,naive_bayes,2,0.67,0.6233333333333334,{'clf__alpha': 0.1}
+B,baseline_maggioranza,3,0.465,0.21160409556313994,{}
+B,regressione_logistica,3,0.74,0.680672709369934,{'clf__C': 10}
+B,random_forest,3,0.74,0.6849282117982307,{'clf__max_depth': 6}
+B,naive_bayes,3,0.73,0.6825544756579239,{'clf__alpha': 0.1}
+B,baseline_maggioranza,4,0.465,0.21160409556313994,{}
+B,regressione_logistica,4,0.75,0.7227925389157273,{'clf__C': 10}
+B,random_forest,4,0.74,0.6996305768684286,{'clf__max_depth': 6}
+B,naive_bayes,4,0.745,0.7202923976608187,{'clf__alpha': 0.1}
+C,baseline_maggioranza,0,0.47,0.21315192743764175,{}
+C,regressione_logistica,0,0.725,0.6604516647728792,{'clf__C': 1}
+C,random_forest,0,0.695,0.6509898831327403,{'clf__max_depth': 6}
+C,naive_bayes,0,0.65,0.5989008093355919,{'clf__alpha': 0.1}
+C,baseline_maggioranza,1,0.47,0.21315192743764175,{}
+C,regressione_logistica,1,0.755,0.7301811972724924,{'clf__C': 10}
+C,random_forest,1,0.745,0.727780395704924,{'clf__max_depth': 6}
+C,naive_bayes,1,0.695,0.6652910052910054,{'clf__alpha': 0.1}
+C,baseline_maggioranza,2,0.465,0.21160409556313994,{}
+C,regressione_logistica,2,0.75,0.7187374492096361,{'clf__C': 1}
+C,random_forest,2,0.71,0.6684704641350212,{'clf__max_depth': 6}
+C,naive_bayes,2,0.645,0.6011020222676664,{'clf__alpha': 0.1}
+C,baseline_maggioranza,3,0.465,0.21160409556313994,{}
+C,regressione_logistica,3,0.74,0.680672709369934,{'clf__C': 10}
+C,random_forest,3,0.75,0.6899054236633854,{'clf__max_depth': 6}
+C,naive_bayes,3,0.665,0.6113879660391288,{'clf__alpha': 0.1}
+C,baseline_maggioranza,4,0.465,0.21160409556313994,{}
+C,regressione_logistica,4,0.76,0.748578786849429,{'clf__C': 1}
+C,random_forest,4,0.755,0.725696416426523,{'clf__max_depth': 6}
+C,naive_bayes,4,0.76,0.7044689850119714,{'clf__alpha': 1}
+oracolo,baseline_maggioranza,0,0.47,0.21315192743764175,{}
+oracolo,regressione_logistica,0,0.93,0.9190133453291347,{'clf__C': 10}
+oracolo,random_forest,0,0.855,0.8372020186650436,{'clf__max_depth': None}
+oracolo,naive_bayes,0,0.765,0.7233104858104857,{'clf__alpha': 0.1}
+oracolo,baseline_maggioranza,1,0.47,0.21315192743764175,{}
+oracolo,regressione_logistica,1,0.935,0.9330117242568986,{'clf__C': 10}
+oracolo,random_forest,1,0.9,0.8919130252463585,{'clf__max_depth': None}
+oracolo,naive_bayes,1,0.81,0.800592914761533,{'clf__alpha': 1}
+oracolo,baseline_maggioranza,2,0.465,0.21160409556313994,{}
+oracolo,regressione_logistica,2,0.925,0.9285074857231054,{'clf__C': 10}
+oracolo,random_forest,2,0.845,0.8302622120478197,{'clf__max_depth': 6}
+oracolo,naive_bayes,2,0.72,0.6819813057360239,{'clf__alpha': 0.1}
+oracolo,baseline_maggioranza,3,0.465,0.21160409556313994,{}
+oracolo,regressione_logistica,3,0.905,0.8930753299196535,{'clf__C': 1}
+oracolo,random_forest,3,0.865,0.83458803507745,{'clf__max_depth': None}
+oracolo,naive_bayes,3,0.78,0.735475013071191,{'clf__alpha': 1}
+oracolo,baseline_maggioranza,4,0.465,0.21160409556313994,{}
+oracolo,regressione_logistica,4,0.885,0.869627261314475,{'clf__C': 10}
+oracolo,random_forest,4,0.85,0.8138768638768639,{'clf__max_depth': None}
+oracolo,naive_bayes,4,0.81,0.7428892946134326,{'clf__alpha': 1}

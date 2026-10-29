@@ -12,6 +12,7 @@ N_GOLD_SET = 100
 QUOTA_TEST = 0.2
 N_FOLD_CV = 5
 RUMORE_GRAVITA = 0.12  # probabilità che l'etichetta osservata si sposti di un livello. Assunzione dichiarata.
+LAPLACE_ALPHA = 1.0  # pseudoconteggio per cella delle CPT della rete bayesiana
 
 # Ricerca nello spazio degli stati (dispatch dei mezzi). Distanze da griglia con ostacoli.
 DIM_GRIGLIA = (20, 20)  # righe, colonne
