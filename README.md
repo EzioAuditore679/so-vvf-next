@@ -14,7 +14,9 @@ Dato un insieme di incidenti attivi e una flotta di mezzi distribuiti in stazion
 1. **Dati** (`src/modello_generativo.py`, `src/generate_dataset.py`): un modello causale esplicito genera la situazione (tipo di edificio, piano, sostanze, meteo, velocità del fuoco, persone, vulnerabilità della zona, edifici adiacenti) e la gravità, con rumore dichiarato. Il testo della chiamata è generato solo dai campi osservabili. Dettagli in `docs/modello_generativo.md`.
    `src/nlp_extract.py` è un **adattatore di ingresso** che ricava i campi dal testo; non è oggetto di valutazione nella relazione.
 
-2. **Knowledge base Prolog** (`knowledge_base/kb.pl`, interrogata via `pyswip`): registro territoriale (vulnerabilità, adiacenza tra edifici), idoneità dei mezzi, regola di gravità a tre livelli, regole ricorsive (propagazione del pericolo tra edifici adiacenti), negazione per fallimento (`\+`) per incompatibilità tra mezzi e sostanze, abduzione sulle possibili cause.
+2. **Knowledge base Prolog** (`knowledge_base/kb.pl`, interrogata via `pyswip` da `src/prolog_engine.py`): idoneità dei mezzi con negazione per fallimento (`\+`) per l'incompatibilità canadair–sostanze pericolose; regola di gravità a tre livelli, identica a `regola_gravita` (verificata da test su 2000 casi); abduzione sulla velocità del fuoco (la variabile latente che spiega la gravità osservata); propagazione ricorsiva del pericolo tra edifici adiacenti, con lista dei visitati per evitare i cicli; vincoli di integrità sulle proposte di dispatch.
+   - Complessità misurata con `KnowledgeBase().complessita()`: 21 predicati, 21 regole con corpo, 34 clausole. La profondità della ricorsione di `collegato/2` è al massimo il numero di incidenti dello scenario.
+   - I fatti di scenario (incidenti, mezzi, registro, velocità) vengono asseriti da Python per ogni scenario. Le regole restano fisse nel file.
 
 3. **Ricerca a due livelli**:
    - **Livello 1, distanze** (`src/search.py`): A\* sulla griglia 20×20 con ostacoli calcola il tempo minimo $T(m, i)$ tra ogni mezzo e ogni incidente. Euristica $h = d_{\text{euclidea}} / V_{\max}$, con $V_{\max}$ maggiore o uguale alla velocità di ogni arco, quindi ammissibile. Il costo è verificato contro Dijkstra su tutti i casi di test.
@@ -60,15 +62,17 @@ so-vvf-next/
 │   ├── gold_set.csv           # contaminato: usato per analisi errori
 │   └── test_set.csv           # valutato una sola volta
 ├── knowledge_base/
-│   └── kb.pl                  # regole Prolog (da scrivere)
+│   └── kb.pl                  # regole Prolog
 ├── results/                   # metriche, errori, storico
+├── tests/
+│   └── test_prolog.py         # coerenza KB/regola Python, idoneità, abduzione, ricorsione, integrità
 └── src/
     ├── domain.py              # vocabolario unico del dominio
     ├── modello_generativo.py  # grafo causale e regola di gravità
     ├── generate_dataset.py    # generatore di chiamate e stato del mondo
     ├── nlp_extract.py         # adattatore di ingresso (regole e regex)
     ├── validate.py            # controllo di integrità e metriche NLP
-    ├── prolog_engine.py       # interfaccia pyswip (da scrivere)
+    ├── prolog_engine.py       # interfaccia pyswip verso kb.pl
     ├── bayes_engine.py        # rete bayesiana (da scrivere)
     ├── search.py              # A* spaziale, dispatch: BFS, UCS, A* (da scrivere)
     ├── train_models.py        # nested CV, esperimenti A e B (da scrivere)
@@ -77,7 +81,7 @@ so-vvf-next/
 
 ## Installazione
 
-Richiede Python 3.10+ e SWI-Prolog installato nel sistema.
+Richiede Python 3.10+ e SWI-Prolog installato nel sistema (su Ubuntu/Debian: `sudo apt-get install swi-prolog`; su Windows, installer ufficiale e `swipl` nel PATH).
 
 ```
 python -m venv .venv
@@ -91,13 +95,14 @@ python -c "import pyswip; print('ok')"
 ```
 python src/generate_dataset.py
 python src/validate.py test
+python -m pytest tests/        # include il controllo di coerenza tra KB Prolog e regola Python
 ```
 
 ## Stato di avanzamento
 
 - [x] Dominio, configurazione, modello generativo causale, generatore di dati
 - [x] Adattatore NLP con dev, gold e test set
-- [ ] Knowledge base Prolog
+- [x] Knowledge base Prolog, con test di coerenza con `regola_gravita` (`tests/test_prolog.py`)
 - [ ] Rete bayesiana
 - [ ] Ricerca: A* spaziale, dispatch con BFS, UCS, A* ($h_{\min}$ e $h_{\text{Hungarian}}$)
 - [ ] Machine learning con nested CV, esperimenti A e B
