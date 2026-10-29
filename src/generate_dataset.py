@@ -1,10 +1,7 @@
 """Generatore di chiamate al 115 sintetiche con valori veri dei campi.
 
-Due parti indipendenti:
-1. Stato del mondo: campionato dal modello causale in modello_generativo.py.
-   Include variabili nascoste (velocità del fuoco, vulnerabilità, adiacenti) e la gravità.
-2. Testo della chiamata: generato solo dai campi osservabili (tipo, piano, sostanze,
-   persone, meteo), con rumore del parlato. Le variabili nascoste non compaiono nel testo.
+Il testo è generato solo dai campi osservabili (tipo, piano, sostanze, persone, meteo),
+con rumore del parlato. Le variabili nascoste non compaiono nel testo.
 
 Esecuzione dalla radice del progetto:
     python src/generate_dataset.py
@@ -43,7 +40,6 @@ APERTURE = [
     "Buongiorno, c'è",
 ]
 
-# Frasi per il meteo: il valore vero è in Meteo, la frase è solo il modo di dirlo.
 FRASI_METEO = {
     Meteo.VENTO_FORTE: ["c'è vento forte", "il vento è forte"],
     Meteo.CALMO: ["non c'è vento", "il tempo è calmo"],
@@ -74,7 +70,7 @@ def _frase_persone(rng: random.Random, persone: Persone) -> str:
 
 
 def _rumore(rng: random.Random, testo: str) -> str:
-    """Applica le imperfezioni tipiche del parlato. Ogni trasformazione ha una probabilità fissa."""
+    """Imperfezioni del parlato, ciascuna con probabilità fissa."""
     if rng.random() < 0.3:
         testo = testo.lower()
     if rng.random() < 0.3:
@@ -131,7 +127,7 @@ def scrivi_csv(records: list[dict], path: Path) -> None:
 
 
 def copertura(records: list[dict]) -> dict[str, Counter]:
-    """Conteggio dei valori per campo: serve a verificare che ogni etichetta compaia nel dataset."""
+    """Conteggio dei valori per campo, per verificare che ogni etichetta compaia."""
     campi = CAMPI_OSSERVABILI + ["velocita_fuoco", "vulnerabilita", "adiacenti", "gravita"]
     return {c: Counter(r[c] for r in records) for c in campi}
 

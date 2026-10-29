@@ -1,4 +1,4 @@
-"""Test della knowledge base Prolog. Richiedono SWI-Prolog e pyswip: altrimenti vengono saltati."""
+"""Test della knowledge base Prolog. Richiedono SWI-Prolog e pyswip, altrimenti vengono saltati."""
 
 import random
 import sys
@@ -12,8 +12,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import config  # noqa: E402
 import modello_generativo as mg  # noqa: E402
+import prolog_export  # noqa: E402
 from domain import (  # noqa: E402
-    Gravita,
     Meteo,
     Persone,
     SostanzePericolose,
@@ -30,7 +30,7 @@ def kb():
     from prolog_engine import KnowledgeBase
     try:
         return KnowledgeBase()
-    except Exception as e:  # SWI-Prolog non installato o non trovato
+    except Exception as e:
         pytest.skip(f"SWI-Prolog non disponibile: {e}")
 
 
@@ -39,11 +39,8 @@ def _incidente(i, tipo=TipoEdificio.RESIDENZIALE, piano=0, sost=SostanzePericolo
     return dict(id=i, tipo=tipo, piano=piano, sostanze=sost, persone=persone, meteo=meteo)
 
 
-def test_soglia_autoscala_coerente_con_domain(kb):
-    from domain import SOGLIA_PIANI_AUTOSCALA
-    kb.carica_scenario([], {}, {}, [], {})
-    r = kb._q("soglia_piani_autoscala(S)")
-    assert int(r[0]["S"]) == SOGLIA_PIANI_AUTOSCALA
+def test_kb_statica_aggiornata_rispetto_a_python():
+    assert prolog_export.KB_STATICA_PATH.read_text(encoding="utf-8") == prolog_export.genera_kb_statica()
 
 
 def test_autoscala_solo_in_altezza(kb):
@@ -67,7 +64,7 @@ def test_negazione_canadair_non_con_sostanze(kb):
 
 
 def test_gravita_coerente_con_regola_python(kb):
-    """Stessa regola in Prolog e in Python, su molte situazioni casuali: devono coincidere sempre."""
+    """Prolog e regola_gravita devono dare sempre la stessa gravità."""
     rng = random.Random(config.SEME)
     casi = [mg.genera_variabili(rng) for _ in range(2000)]
     inc, reg, vel, attesi = [], {}, {}, {}
@@ -84,7 +81,6 @@ def test_gravita_coerente_con_regola_python(kb):
 
 
 def test_abduzione_contiene_la_velocita_vera(kb):
-    """Se la gravità osservata è quella prodotta dalla velocità vera, quella velocità è tra le ipotesi."""
     rng = random.Random(config.SEME + 1)
     casi = [mg.genera_variabili(rng) for _ in range(300)]
     inc, reg, vel = [], {}, {}
@@ -97,14 +93,11 @@ def test_abduzione_contiene_la_velocita_vera(kb):
     kb.carica_scenario(inc, {}, reg, [], vel)
     for n, v in enumerate(casi):
         i = f"h{n}"
-        g = kb.gravita(i)
-        assert v["velocita_fuoco"].value in kb.spiegazioni_velocita(i, g)
+        assert v["velocita_fuoco"].value in kb.spiegazioni_velocita(i, kb.gravita(i))
 
 
 def test_propagazione_ricorsiva_e_ciclo_terminano(kb):
-    """Catena a, b, c e ciclo a-b-c-a: la ricorsione deve terminare e raggiungere tutti."""
-    # ca critica (persone confermate, velocita alta, vulnerabilita alta, 2 adiacenti: punteggio 6).
-    # cb e cc bassa: esposte per collegamento con ca, anche attraverso il ciclo.
+    # ca critica (punteggio 6); cb e cc, bassa, sono raggiungibili da ca anche attraverso il ciclo.
     inc = [_incidente("ca", TipoEdificio.INDUSTRIALE, 1, SostanzePericolose.NO, Persone.CONFERMATE),
            _incidente("cb", TipoEdificio.INDUSTRIALE, 1, SostanzePericolose.NO, Persone.ASSENTI),
            _incidente("cc", TipoEdificio.INDUSTRIALE, 1, SostanzePericolose.NO, Persone.ASSENTI)]
@@ -115,12 +108,11 @@ def test_propagazione_ricorsiva_e_ciclo_terminano(kb):
     assert kb.collegati("ca") == {"cb", "cc"}
     assert kb.esposto("cb") is True
     assert kb.esposto("cc") is True
-    assert kb.esposto("ca") is False         # un incidente non è esposto a se stesso
+    assert kb.esposto("ca") is False
 
 
 def test_gravita_operativa_eleva_alto_esposto_a_critico(kb):
-    # i1 critica (persone confermate, velocita alta, sostanze si, vulnerabilita alta, 2 adiacenti),
-    # i2 alta (assenti, velocita alta, sostanze si) ma adiacente a i1
+    # i1 critica; i2 alta ma adiacente a i1.
     inc = [_incidente("i1", TipoEdificio.INDUSTRIALE, 2, SostanzePericolose.SI, Persone.CONFERMATE, Meteo.VENTO_FORTE),
            _incidente("i2", TipoEdificio.INDUSTRIALE, 0, SostanzePericolose.SI, Persone.ASSENTI, Meteo.VENTO_FORTE)]
     reg = {"i1": (Vulnerabilita.ALTA, 2), "i2": (Vulnerabilita.BASSA, 0)}
@@ -137,11 +129,9 @@ def test_violazioni_proposta_valida_e_non(kb):
     kb.carica_scenario(inc, mezzi, {i["id"]: (Vulnerabilita.BASSA, 0) for i in inc}, [],
                        {i["id"]: VelocitaFuoco.BASSA for i in inc})
     assert kb.violazioni([("m_scala", "v1"), ("m_cnd", "v2")]) == []
-    # m_scala a due incidenti: esclusività violata; m_cnd al residenziale: non idoneo
     viol = kb.violazioni([("m_scala", "v1"), ("m_scala", "v2"), ("m_cnd", "v1")])
     assert any(v.startswith("doppia_assegnazione(m_scala)") for v in viol)
     assert any(v.startswith("non_idoneo(m_cnd,v1)") for v in viol)
-    # solo v1 coperto: v2 risulta scoperto
     assert "incidente_scoperto(v2)" in kb.violazioni([("m_scala", "v1")])
 
 

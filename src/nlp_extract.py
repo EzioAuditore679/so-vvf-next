@@ -1,11 +1,9 @@
-"""Estrazione dei campi di una chiamata dal solo testo (regole e regex).
+"""Estrazione dei campi di una chiamata dal solo testo, con regole e regex.
 
-Il lessico di questo modulo è definito qui, separato da PAROLE_CHIAVE di
-domain.py che il generatore usa per produrre i testi. Così il risultato non
-dipende dalle stesse frasi usate per generare il dataset.
-
-Il gold set (data/gold_set.csv) è stato usato anche per analizzare gli errori,
-quindi il suo risultato non è più completamente indipendente: va dichiarato.
+Adattatore di ingresso, non oggetto di valutazione. Il lessico è definito qui e non
+riusa le frasi di PAROLE_CHIAVE: il generatore e l'estrattore non condividono le stesse
+espressioni. Il gold set è stato usato anche per analizzare gli errori, quindi il suo
+risultato non è completamente indipendente.
 """
 
 import csv
@@ -21,23 +19,21 @@ from domain import Meteo, Persone, SostanzePericolose, TipoEdificio  # noqa: E40
 
 ORDINALI = {"primo": 1, "secondo": 2, "terzo": 3, "quarto": 4, "quinto": 5, "sesto": 6}
 
-# Radici (non frasi intere) per riconoscere il tipo di edificio.
+# Radici, non frasi intere.
 RADICI_EDIFICIO = {
     TipoEdificio.RESIDENZIALE: ["palazzin", "palazz", "condomin", "appartament", "abitazion", "villett", "casa"],
     TipoEdificio.INDUSTRIALE: ["capannon", "stabiliment", "deposit", "officin", "magazzin", "fabbric"],
     TipoEdificio.BOSCO: ["bosc", "sterpaglie", "pineta"],
 }
 
-# Radici che indicano una sostanza pericolosa.
 RADICI_SOSTANZE = [
     "bombol", "serbatoi", "vernic", "solvent", "acid", "gas",
     "benzin", "tanic", "gpl", "idrogen", "ossigen", "cloro", "propan",
 ]
 
-# Negazioni: parole generiche oppure "non c'è / non ci sono / non risulta".
 NEGAZIONE = re.compile(r"\b(nessun\w*|niente|nulla)\b|\bnon (c'è|ci sono|ci sia|ci siano|risulta)\b")
 
-# Persone: l'ordine di priorità conta. L'incertezza prevale, poi le assenze, poi le conferme.
+# Ordine di priorità: l'incertezza prevale, poi le assenze, poi le conferme.
 PATTERN_INCERTE = [r"non sappiamo", r"non si sa", r"forse", r"potrebbe esserci", r"pare ci sia", r"non è sicuro"]
 PATTERN_ASSENTI = [
     r"non c'è nessuno",
@@ -45,11 +41,10 @@ PATTERN_ASSENTI = [
     r"tutti (sono )?(usciti|fuori)",
     r"edificio (è|risulta) (vuoto|sgombro)",
 ]
-# Negazione diretta di una persona bloccata: "nessuno è intrappolato", "nessuno è rimasto dentro".
 PATTERN_NEGATE_CONFERMATE = re.compile(r"\bnessun\w* (è |sono )?(intrappolat|bloccat|rimast)")
 PATTERN_CONFERMATE = [r"intrappolat", r"bloccat", r"rimast\w* dentro", r"non riesc\w* a (uscire|scendere)"]
 
-# Meteo: calma prima di vento, altrimenti "non tira vento" diventerebbe vento forte.
+# La calma va riconosciuta prima del vento, altrimenti "non tira vento" sarebbe vento forte.
 PATTERN_CALMO = re.compile(
     r"aria (calma|ferma)|tempo (stabile|calmo)|calm|non (c'è|tira|ci sono|ci sia) vento|niente vento"
 )
@@ -57,7 +52,7 @@ PATTERN_CALMO = re.compile(
 
 def _normalizza(testo: str) -> str:
     t = testo.lower().replace("’", "'")
-    t = re.sub(r"\bp\.", "piano", t)  # abbreviazione del parlato
+    t = re.sub(r"\bp\.", "piano", t)
     return re.sub(r"\s+", " ", t)
 
 
@@ -127,9 +122,8 @@ def estrai_campi(testo: str) -> dict:
 
 
 if __name__ == "__main__":
-    # Verifica rapida sul dataset sintetico. ATTENZIONE: questo numero è ottimistico,
-    # perché le regole sono state scritte guardando lo stesso tipo di testi.
-    # La valutazione vera si fa su gold set in validate.py.
+    # ATTENZIONE: numero ottimistico, le regole sono state scritte guardando testi dello stesso tipo.
+    # La valutazione vera si fa su gold/test in validate.py.
     percorso = ROOT / "data" / "dataset_sintetico.csv"
     campi = ["tipo_edificio", "piano", "sostanze_pericolose", "persone", "meteo"]
     corretti = {c: 0 for c in campi}

@@ -1,20 +1,16 @@
 """Modello generativo causale dei dati sintetici.
 
-Ogni chiamata è prodotta da un grafo aciclico esplicito:
-
     Tipo ──► Piano
      │  └──► Sostanze ──┐
      │                  ├──► Velocità ◄── Meteo
      └──► Persone ◄── Piano
     Persone, Velocità, Sostanze, Vulnerabilità, Adiacenti ──► Gravità  (+ rumore)
 
-Variabili NASCOSTE (non compaiono nel testo della chiamata):
-- Velocità del fuoco: il sistema deve stimarla, la rete bayesiana la tratta come latente.
-- Vulnerabilità della zona e numero di edifici adiacenti: sono fatti del registro territoriale,
-  noti alla knowledge base Prolog ma non alla chiamata. Sono la conoscenza di fondo.
+Variabili nascoste (non compaiono nel testo della chiamata): velocità del fuoco,
+vulnerabilità della zona, numero di edifici adiacenti.
 
-Tutte le probabilità sono ASSUNZIONI DICHIARATE, scelte a mano. Vanno documentate in
-docs/modello_generativo.md e sottoposte ad analisi di sensitività. Non sono stime da dati reali.
+Tutte le probabilità sono assunzioni dichiarate, scelte a mano. Vanno documentate in
+docs/modello_generativo.md e sottoposte ad analisi di sensitività.
 """
 
 import random
@@ -30,21 +26,17 @@ from domain import (
     Vulnerabilita,
 )
 
-# --- Tipo di edificio e piano -------------------------------------------------
-
 P_TIPO = {
     TipoEdificio.RESIDENZIALE: 0.40,
     TipoEdificio.INDUSTRIALE: 0.35,
     TipoEdificio.BOSCO: 0.25,
 }
 
-# Pesi per i piani 1..6. Il bosco non ha piani (piano = 0).
+# Pesi per i piani 1..6. Il bosco ha piano 0.
 PESI_PIANO = {
     TipoEdificio.RESIDENZIALE: [0.25, 0.25, 0.20, 0.15, 0.10, 0.05],
     TipoEdificio.INDUSTRIALE: [0.40, 0.30, 0.20, 0.10, 0.00, 0.00],
 }
-
-# --- Sostanze pericolose: dipendono dal tipo di edificio ----------------------
 
 P_SOSTANZE_SI = {
     TipoEdificio.RESIDENZIALE: 0.30,
@@ -52,11 +44,7 @@ P_SOSTANZE_SI = {
     TipoEdificio.BOSCO: 0.05,
 }
 
-# --- Meteo (radice, indipendente) ---------------------------------------------
-
 P_VENTO_FORTE = 0.40
-
-# --- Velocità del fuoco: dipende da meteo e sostanze --------------------------
 
 P_VELOCITA = {
     (Meteo.VENTO_FORTE, SostanzePericolose.SI): {
@@ -73,8 +61,6 @@ P_VELOCITA = {
     },
 }
 
-# --- Persone coinvolte: dipendono dal tipo e dal piano ------------------------
-
 BASE_CONFERMATE = {
     TipoEdificio.RESIDENZIALE: 0.10,
     TipoEdificio.INDUSTRIALE: 0.15,
@@ -82,19 +68,16 @@ BASE_CONFERMATE = {
 }
 INCREMENTO_CONFERMATE_PER_PIANO = 0.06
 TETTO_CONFERMATE = 0.65
-P_PERSONE_INCERTE = 0.20  # costante: l'incertezza non dipende dal contesto in questo modello
-
-# --- Variabili nascoste di conoscenza di fondo --------------------------------
+P_PERSONE_INCERTE = 0.20  # costante: in questo modello l'incertezza non dipende dal contesto
 
 P_VULNERABILITA_ALTA = 0.30
 P_ADIACENTI = [0.40, 0.30, 0.20, 0.10]  # probabilità di 0, 1, 2, 3 edifici adiacenti
 
-# --- Regola di gravità: punteggio sommato e soglie ----------------------------
-
+# Regola di gravità: punteggio sommato e soglie. Replicate in kb_statica.pl da prolog_export.py.
 PUNTI_PERSONE = {Persone.CONFERMATE: 2, Persone.INCERTE: 1, Persone.ASSENTI: 0}
 PUNTI_VELOCITA = {VelocitaFuoco.ALTA: 2, VelocitaFuoco.MEDIA: 1, VelocitaFuoco.BASSA: 0}
-SOGLIA_CRITICO = 5  # punteggio minimo per gravità critica
-SOGLIA_ALTO = 3     # punteggio minimo per gravità alta, sotto è bassa
+SOGLIA_CRITICO = 5
+SOGLIA_ALTO = 3
 
 LIVELLI_GRAVITA = [Gravita.CRITICO, Gravita.ALTO, Gravita.BASSO]
 
@@ -115,7 +98,7 @@ def _distribuzione_persone(tipo: TipoEdificio, piano: int) -> dict:
 
 
 def genera_variabili(rng: random.Random) -> dict:
-    """Campiona una situazione completa seguendo il grafo causale. Restituisce enum e interi."""
+    """Campiona una situazione completa seguendo il grafo causale."""
     tipo = _scegli(rng, P_TIPO)
     piano = 0 if tipo is TipoEdificio.BOSCO else rng.choices(range(1, 7), weights=PESI_PIANO[tipo])[0]
     sostanze = SostanzePericolose.SI if rng.random() < P_SOSTANZE_SI[tipo] else SostanzePericolose.NO
@@ -139,9 +122,8 @@ def genera_variabili(rng: random.Random) -> dict:
 def regola_gravita(v: dict) -> Gravita:
     """Regola di dominio deterministica, senza rumore.
 
-    Questa stessa regola va scritta in Prolog per la knowledge base. ATTENZIONE: il suo output
-    NON va mai passato come feature al modello ML, perché coincide con il target a meno del rumore
-    (target leakage). La KB fornisce al ML solo i fatti di base (vulnerabilità, adiacenti).
+    ATTENZIONE: il suo output non va mai passato come feature al modello ML, perché
+    coincide con il target a meno del rumore (target leakage).
     """
     punti = PUNTI_PERSONE[v["persone"]] + PUNTI_VELOCITA[v["velocita_fuoco"]]
     punti += 1 if v["sostanze_pericolose"] is SostanzePericolose.SI else 0

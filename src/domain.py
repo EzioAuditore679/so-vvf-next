@@ -1,9 +1,7 @@
 """Vocabolario unico del dominio SO-VVF-NEXT.
 
-Fonte di verità per generatore di dataset, adattatore NLP, knowledge base
-Prolog, rete bayesiana, ricerca nello spazio degli stati e ML. Ogni modulo
-importa da qui, così le etichette non possono divergere tra un componente e l'altro.
-
+Generatore, adattatore NLP, KB Prolog, rete bayesiana, ricerca e ML importano da qui,
+così le etichette non possono divergere tra i moduli.
 """
 
 from enum import Enum
@@ -21,8 +19,7 @@ class SostanzePericolose(str, Enum):
 
 
 class Gravita(str, Enum):
-    """Etichetta di gravità a tre livelli. Le regole che la definiscono vanno dichiarate
-    in knowledge_base/kb.pl: la definizione è una regola di dominio esplicita, non un'etichetta libera."""
+    """Gravità a tre livelli. La regola che la definisce è in modello_generativo.regola_gravita e in kb.pl."""
     CRITICO = "critico"
     ALTO = "alto"
     BASSO = "basso"
@@ -46,16 +43,16 @@ class Meteo(str, Enum):
 
 
 class Vulnerabilita(str, Enum):
-    """Vulnerabilità strutturale della zona: fatto del registro territoriale, nascosto nella chiamata."""
+    """Vulnerabilità strutturale della zona: fatto del registro territoriale, non presente nella chiamata."""
     ALTA = "alta"
     BASSA = "bassa"
 
 
 class TipoMezzo(str, Enum):
-    AUTOPOMPA = "autopompa"          # APS / autopompa serbatoio
+    AUTOPOMPA = "autopompa"
     AUTOSCALA = "autoscala"
     NUCLEO_NBCR = "nucleo_nbcr"      # rischio chimico, biologico, radiologico
-    CANADAIR = "canadair"            # incendi boschivi
+    CANADAIR = "canadair"
 
 
 class Equipaggiamento(str, Enum):
@@ -65,24 +62,20 @@ class Equipaggiamento(str, Enum):
 
 
 class Campo(str, Enum):
-    """Campi estratti dal testo della chiamata. Ogni campo ha un proprio enum di valori."""
+    """Campi estratti dal testo della chiamata."""
     TIPO_EDIFICIO = "tipo_edificio"
     SOSTANZE_PERICOLOSE = "sostanze_pericolose"
     PERSONE = "persone"
 
 
-# Parole chiave usate dal generatore e dall'estrattore NLP.
-# Struttura: Campo -> valore del campo -> lista di espressioni italiane.
-# Tutte le chiavi interne sono membri degli enum sopra, mai stringhe libere.
-# Il gold set manuale NON usa solo queste parole, per evitare un test circolare.
+# Parole chiave usate dal generatore. Il gold set manuale non le usa tutte,
+# per evitare un test circolare.
 PAROLE_CHIAVE: dict[Campo, dict[Enum, list[str]]] = {
     Campo.TIPO_EDIFICIO: {
         TipoEdificio.RESIDENZIALE: ["una palazzina", "un condominio", "un appartamento"],
         TipoEdificio.INDUSTRIALE: ["un capannone", "uno stabilimento", "un deposito"],
         TipoEdificio.BOSCO: ["un bosco", "delle sterpaglie", "una pineta"],
     },
-    # Le espressioni sono frasi complete, così il generatore le inserisce senza errori grammaticali.
-    # L'estrattore NLP cercherà le stesse radici, non le frasi intere.
     Campo.SOSTANZE_PERICOLOSE: {
         SostanzePericolose.SI: ["bombole di gas", "un serbatoio", "delle vernici", "dei solventi", "dell'acido"],
         SostanzePericolose.NO: ["nessuna sostanza pericolosa", "niente sostanze pericolose", "nessun rischio chimico"],
@@ -94,14 +87,13 @@ PAROLE_CHIAVE: dict[Campo, dict[Enum, list[str]]] = {
     },
 }
 
-# Soglia di altezza (in piani) sopra cui serve l'autoscala. Assunzione dichiarata.
+# Altezza in piani oltre la quale serve l'autoscala. Assunzione dichiarata.
 SOGLIA_PIANI_AUTOSCALA = 4
 
-# Soglia di probabilità per trasformare la distribuzione BN in una decisione.
+# Soglia di probabilità per trasformare la distribuzione della rete bayesiana in decisione.
 # Assunzione dichiarata: P(Critico) > soglia => gravità operativa "critica".
 SOGLIA_PROB_CRITICO = 0.7
 
-# Velocità massima della griglia: denominatore dell'euristica del livello 1 (A* spaziale),
-# h = distanza_euclidea / V_MAX_GRIGLIA. Deve essere >= alla velocità di ogni arco,
-# altrimenti h non è ammissibile.
+# Denominatore dell'euristica di A* spaziale: h = distanza_euclidea / V_MAX_GRIGLIA.
+# Deve essere >= alla velocità di ogni arco, altrimenti h non è ammissibile.
 V_MAX_GRIGLIA = 1.0

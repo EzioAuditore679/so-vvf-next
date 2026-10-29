@@ -1,9 +1,9 @@
-"""Validazione del gold set e dell'estrattore NLP.
+"""Validazione di un insieme di test (gold, dev o test) per l'estrattore NLP.
 
-1. Controllo di integrità del file gold_set.csv: colonne, valori ammessi, id unici.
-2. Valutazione di estrai_campi() sul gold set: accuratezza, precisione, recall,
-   F1 macro e matrice di confusione per ogni campo.
+1. Integrità del file: colonne, valori ammessi, id unici.
+2. Valutazione di estrai_campi(): accuratezza, precisione, recall, F1 macro e matrice di confusione.
 
+Uso: python src/validate.py [gold|dev|test]   (default: gold)
 """
 
 import csv
@@ -33,7 +33,7 @@ VALORI_AMMESSI = {
     "meteo": {e.value for e in Meteo},
 }
 CAMPI_CATEGORICI = list(VALORI_AMMESSI)
-ETICHETTA_ASSENTE = "nessuno"  # quando l'estrattore non riconosce il campo
+ETICHETTA_ASSENTE = "nessuno"  # l'estrattore non riconosce il campo
 
 
 def leggi(percorso: Path) -> list[dict]:
@@ -66,7 +66,6 @@ def valuta(righe: list[dict]) -> tuple[dict, list[dict]]:
     risultati = {}
     errori = []
 
-    # Piano: valore intero, quindi basta l'accuratezza esatta.
     ok = [int(p["piano"]) == int(r["piano"]) for p, r in zip(predizioni, righe)]
     risultati["piano"] = {"accuracy": sum(ok) / len(ok)}
     for p, r, corretto in zip(predizioni, righe, ok):
@@ -101,7 +100,6 @@ def valuta(righe: list[dict]) -> tuple[dict, list[dict]]:
 
 
 if __name__ == "__main__":
-    # Uso: python src/validate.py [gold|dev]   (default: gold)
     nome = sys.argv[1] if len(sys.argv) > 1 else "gold"
     righe = leggi(config.DATA_DIR / f"{nome}_set.csv")
 
