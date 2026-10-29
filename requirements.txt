@@ -1,6 +1,4 @@
-# Dipendenze di SO-VVF-NEXT (Python 3.10+)
-# Installazione: pip install -r requirements.txt
-# Richiede anche SWI-Prolog installato nel sistema (per pyswip).
+# Dipendenze di SO-VVF-NEXT 
 
 # Calcolo numerico e dati
 numpy>=1.26
@@ -24,6 +22,4 @@ matplotlib>=3.9
 # Test
 pytest>=8.2
 
-# Opzionale, solo per il modulo NLP se si usa spaCy:
-# spacy>=3.7
-# poi: python -m spacy download it_core_news_sm
+

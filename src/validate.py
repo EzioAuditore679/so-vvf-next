@@ -4,11 +4,6 @@
 2. Valutazione di estrai_campi() sul gold set: accuratezza, precisione, recall,
    F1 macro e matrice di confusione per ogni campo.
 
-Il gold set NON deve servire a scrivere o tarare le regole di nlp_extract.py:
-se si correggono le regole guardando i suoi errori, il risultato diventa circolare.
-
-Esecuzione dalla radice del progetto:
-    python src/validate.py
 """
 
 import csv

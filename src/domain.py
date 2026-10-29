@@ -4,8 +4,6 @@ Fonte di verità per generatore di dataset, adattatore NLP, knowledge base
 Prolog, rete bayesiana, ricerca nello spazio degli stati e ML. Ogni modulo
 importa da qui, così le etichette non possono divergere tra un componente e l'altro.
 
-Non c'è ontologia OWL né reasoner: la rappresentazione è relazionale (Prolog),
-come da decisione del 28/10.
 """
 
 from enum import Enum
