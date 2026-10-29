@@ -73,6 +73,7 @@ so-vvf-next/
 │   ├── kb.pl                  # regole Prolog
 │   └── kb_statica.pl          # soglie e punteggi, generato da prolog_export.py
 ├── results/                   # metriche, errori, storico
+├── plots/                     # grafici generati da main.py
 ├── tests/
 │   ├── test_prolog.py         # coerenza KB/regola Python, squadra, abduzione, ricorsione, integrità
 │   ├── test_search.py         # ammissibilità, consistenza, ottimalità delle euristiche
@@ -91,7 +92,7 @@ so-vvf-next/
     ├── train_models.py        # nested CV, esperimenti A, B, rete, C, oracolo
     ├── sensitivita.py         # recupero delle CPT e rumore delle etichette
     ├── valutazione_dispatch.py # fonti di gravità valutate sul dispatch
-    └── main.py                # pipeline completa e demo (da scrivere)
+    └── main.py                # demo integrata, pipeline degli esperimenti, grafici
 ```
 
 ## Installazione
@@ -105,7 +106,23 @@ pip install -r requirements.txt
 python -c "import pyswip; print('ok')"
 ```
 
-## Riproducibilità
+## Uso
+
+```
+python src/main.py                                  # demo: 4 chiamate dal testo al dispatch, con spiegazioni (pochi secondi)
+python src/main.py esperimenti                      # rigenera dataset, test, risultati e grafici (~15 minuti)
+python src/main.py esperimenti --senza-sensibilita  # come sopra, senza l'analisi di sensibilità (~5 minuti)
+python src/main.py grafici                          # solo i grafici in plots/, dai CSV in results/
+```
+
+La demo stima la gravità con ML, rete bayesiana e rete + regola della KB, ricava la squadra dalla KB con
+le motivazioni di ogni ruolo, assegna i mezzi con A* e verifica la proposta con i vincoli di integrità in Prolog.
+Il dispatch usa la gravità della fonte rete + KB, che nella valutazione end-to-end manca meno incidenti critici.
+
+Grafici in `plots/`: `ml_modelli.png` (media ± dev. std. per esperimento e modello), `ricerca_espansi.png`
+(nodi espansi di LcFS e A* al crescere degli incidenti), `dispatch_fonti.png` (fonti della gravità valutate sul dispatch).
+
+## Riproducibilità dei singoli passi
 
 ```
 python src/generate_dataset.py
@@ -127,7 +144,7 @@ python src/valutazione_dispatch.py  # fonti di gravità sul dispatch
 - [x] Machine learning con nested CV: esperimenti A, B, rete, controlli C e oracolo
 - [x] Analisi di sensibilità: recupero delle CPT rispetto al generatore, rumore 0.05 / 0.12 / 0.20
 - [x] Valutazione end-to-end delle fonti di gravità sul dispatch
-- [ ] Pipeline principale, demo e grafici
+- [x] Pipeline principale, demo e grafici
 - [ ] Relazione
 
 Il gold set è contaminato dall'analisi degli errori. Il dettaglio è in `results/storico_estrattore.md`.
