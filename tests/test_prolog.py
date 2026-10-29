@@ -14,6 +14,7 @@ import config  # noqa: E402
 import modello_generativo as mg  # noqa: E402
 import prolog_export  # noqa: E402
 from domain import (  # noqa: E402
+    Gravita,
     Meteo,
     Persone,
     SostanzePericolose,
@@ -43,15 +44,19 @@ def test_kb_statica_aggiornata_rispetto_a_python():
     assert prolog_export.KB_STATICA_PATH.read_text(encoding="utf-8") == prolog_export.genera_kb_statica()
 
 
-def test_autoscala_solo_in_altezza(kb):
-    inc = [_incidente("a3", TipoEdificio.RESIDENZIALE, 3), _incidente("a4", TipoEdificio.RESIDENZIALE, 4),
-           _incidente("b5", TipoEdificio.INDUSTRIALE, 5)]
+def test_autoscala_solo_in_altezza_e_con_persone(kb):
+    conf = Persone.CONFERMATE
+    inc = [_incidente("a3", TipoEdificio.RESIDENZIALE, 3, persone=conf),
+           _incidente("a4", TipoEdificio.RESIDENZIALE, 4, persone=conf),
+           _incidente("b5", TipoEdificio.INDUSTRIALE, 5, persone=conf),
+           _incidente("v5", TipoEdificio.RESIDENZIALE, 5, persone=Persone.ASSENTI)]
     mezzi = {"m_scala": TipoMezzo.AUTOSCALA, "m_pompa": TipoMezzo.AUTOPOMPA}
     kb.carica_scenario(inc, mezzi, {i["id"]: (Vulnerabilita.BASSA, 0) for i in inc}, [],
                        {i["id"]: VelocitaFuoco.BASSA for i in inc})
     assert "m_scala" not in kb.mezzi_idonei("a3")
     assert "m_scala" in kb.mezzi_idonei("a4")
     assert "m_scala" in kb.mezzi_idonei("b5")
+    assert "m_scala" not in kb.mezzi_idonei("v5")  # edificio alto ma nessuno da soccorrere
 
 
 def test_negazione_canadair_non_con_sostanze(kb):
@@ -124,15 +129,68 @@ def test_gravita_operativa_eleva_alto_esposto_a_critico(kb):
 
 
 def test_violazioni_proposta_valida_e_non(kb):
-    inc = [_incidente("v1", TipoEdificio.RESIDENZIALE, 4), _incidente("v2", TipoEdificio.BOSCO, 0)]
-    mezzi = {"m_scala": TipoMezzo.AUTOSCALA, "m_cnd": TipoMezzo.CANADAIR}
+    inc = [_incidente("v1", TipoEdificio.RESIDENZIALE, 4, persone=Persone.CONFERMATE),
+           _incidente("v2", TipoEdificio.BOSCO, 0)]
+    mezzi = {"m_scala": TipoMezzo.AUTOSCALA, "m_pompa": TipoMezzo.AUTOPOMPA, "m_cnd": TipoMezzo.CANADAIR}
     kb.carica_scenario(inc, mezzi, {i["id"]: (Vulnerabilita.BASSA, 0) for i in inc}, [],
                        {i["id"]: VelocitaFuoco.BASSA for i in inc})
-    assert kb.violazioni([("m_scala", "v1"), ("m_cnd", "v2")]) == []
-    viol = kb.violazioni([("m_scala", "v1"), ("m_scala", "v2"), ("m_cnd", "v1")])
+    valida = [("m_scala", "v1", "soccorso_quota"), ("m_pompa", "v1", "estinzione"), ("m_cnd", "v2", "estinzione")]
+    assert kb.violazioni(valida) == []
+    assert kb.ruoli_scoperti(valida) == []
+    viol = kb.violazioni([("m_scala", "v1", "soccorso_quota"), ("m_scala", "v2", "estinzione"),
+                          ("m_cnd", "v1", "estinzione")])
     assert any(v.startswith("doppia_assegnazione(m_scala)") for v in viol)
-    assert any(v.startswith("non_idoneo(m_cnd,v1)") for v in viol)
-    assert "incidente_scoperto(v2)" in kb.violazioni([("m_scala", "v1")])
+    assert any(v.startswith("non_adatto(m_cnd,v1,estinzione)") for v in viol)
+    assert kb.ruoli_scoperti([("m_scala", "v1", "soccorso_quota")]) == ["v1-estinzione", "v2-estinzione"]
+
+
+def _gravi(kb, gravita: dict, **campi):
+    """Un incidente per voce di gravita, con la gravità imposta come stima esterna."""
+    inc = [_incidente(i, **campi) for i in gravita]
+    kb.carica_scenario(inc, {}, {i: (Vulnerabilita.BASSA, 0) for i in gravita}, [],
+                       gravita_stimata=gravita)
+
+
+def test_squadra_dipende_dalla_gravita(kb):
+    _gravi(kb, {"g_c": Gravita.CRITICO, "g_a": Gravita.ALTO, "g_b": Gravita.BASSO},
+           tipo=TipoEdificio.RESIDENZIALE, piano=5, persone=Persone.INCERTE)
+    assert kb.squadra("g_c") == ["estinzione", "rinforzo", "soccorso_quota"]
+    assert kb.squadra("g_a") == ["estinzione", "soccorso_quota"]
+    assert kb.squadra("g_b") == ["estinzione"]  # persone incerte e gravità bassa: niente autoscala
+
+
+def test_gravita_stimata_prevale_sulla_regola(kb):
+    inc = [_incidente("s1", TipoEdificio.INDUSTRIALE, 1, SostanzePericolose.SI, Persone.CONFERMATE)]
+    reg = {"s1": (Vulnerabilita.ALTA, 2)}
+    kb.carica_scenario(inc, {}, reg, [], {"s1": VelocitaFuoco.ALTA}, {"s1": Gravita.BASSO})
+    assert kb.gravita("s1") == "critico"            # regola con velocità
+    assert kb.gravita_operativa("s1") == "basso"    # la stima esterna prevale
+    assert kb.squadra("s1") == ["estinzione", "decontaminazione"]
+
+
+def test_rinforzo_per_propagazione_con_spiegazione(kb):
+    kb.carica_scenario([_incidente("p1"), _incidente("p2")], {},
+                       {"p1": (Vulnerabilita.BASSA, 0), "p2": (Vulnerabilita.BASSA, 0)},
+                       [("p1", "p2")], gravita_stimata={"p1": Gravita.CRITICO, "p2": Gravita.ALTO})
+    assert "rinforzo" in kb.squadra("p2")
+    assert ("rinforzo", "esposto_a(p1)") in kb.motivi("p2")
+    assert ("rinforzo", "gravita_critica") in kb.motivi("p1")
+
+
+def test_ogni_ruolo_ha_un_motivo(kb):
+    rng = random.Random(config.SEME + 2)
+    casi = [mg.genera_variabili(rng) for _ in range(300)]
+    inc, reg, vel = [], {}, {}
+    for n, v in enumerate(casi):
+        i = f"r{n}"
+        inc.append(_incidente(i, v["tipo_edificio"], v["piano"], v["sostanze_pericolose"],
+                              v["persone"], v["meteo"]))
+        reg[i] = (v["vulnerabilita"], v["adiacenti"])
+        vel[i] = v["velocita_fuoco"]
+    kb.carica_scenario(inc, {}, reg, [], vel)
+    for n in range(len(casi)):
+        i = f"r{n}"
+        assert set(kb.squadra(i)) == {r for r, _ in kb.motivi(i)}
 
 
 def test_complessita_kb_riportata(kb):

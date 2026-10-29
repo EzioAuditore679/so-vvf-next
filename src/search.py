@@ -2,9 +2,8 @@
 
 Due livelli, con dimostrazioni in docs/ricerca.md:
 - livello 1: distanza tra una stazione e un incidente sulla griglia con ostacoli (A*, Manhattan);
-- livello 2: assegnazione degli incidenti ai mezzi, con costi dal livello 1 (LcFS, A* con h_min o h_libero).
-
-Il modulo non dipende da Prolog: gli idonei sono forniti dal chiamante (vedi idonei_con_kb).
+- livello 2: copertura dei ruoli richiesti dagli incidenti, con costi dal livello 1 (LcFS, A* con h_min
+  o h_libero). I ruoli e i mezzi adatti vengono dalla KB Prolog (adatti_con_kb).
 """
 
 from __future__ import annotations
@@ -127,14 +126,18 @@ def genera_griglia(rng: random.Random, righe: int, colonne: int, p_ostacolo: flo
     return Griglia(righe, colonne, ostacoli)
 
 
-# --- Livello 2: dispatch -----------------------------------------------------
+# --- Livello 2: dispatch per ruoli ------------------------------------------
+
+Ruolo = tuple[str, str]  # (incidente, ruolo)
+
 
 @dataclass
 class Scenario:
-    incidenti: tuple
+    ruoli: tuple        # ruoli da coprire, nell'ordine di assegnazione (vedi ordina_ruoli)
     mezzi: tuple
-    idonei: dict        # incidente -> lista di mezzi idonei (dalla KB Prolog)
+    adatti: dict        # (incidente, ruolo) -> mezzi che lo possono coprire (dalla KB Prolog)
     costo: dict         # (mezzo, incidente) -> max(distanza, COSTO_MINIMO), INF se irraggiungibile
+    penalita: float = config.PENALITA_RUOLO_SCOPERTO
 
 
 @dataclass
@@ -144,106 +147,133 @@ class Caso:
     incidenti: dict     # id -> (variabili di modello_generativo, cella)
 
 
-def _servite(s: frozenset) -> set:
-    return {i for _, i in s}
+def ordina_ruoli(ruoli: list, ammessi: dict) -> tuple:
+    """Ordine fisso delle variabili: prima i ruoli con meno mezzi ammessi (MRV statico dei CSP).
 
-
-def _occupati(s: frozenset) -> set:
-    return {m for m, _ in s}
+    L'ordine non cambia l'ottimo, perché ogni soluzione resta raggiungibile; riduce i rami.
+    """
+    return tuple(sorted(ruoli, key=lambda r: (len(ammessi[r]), r[0], r[1])))
 
 
 class Dispatch:
-    """Stati = insiemi di assegnazioni (mezzo, incidente). Costo di un'azione = costo[(m, i)].
+    """CSP risolto con la ricerca: una variabile per ruolo, valori = mezzi adatti o 'scoperto'.
 
-    Le euristiche sono ammissibili e consistenti: dimostrazioni in docs/ricerca.md.
+    Stato = (k, mezzi occupati): i primi k ruoli sono decisi. Due assegnazioni parziali con lo stesso
+    k e gli stessi mezzi occupati hanno lo stesso futuro, quindi sono lo stesso stato (potatura
+    dei cammini multipli). Azioni sul ruolo k: un mezzo adatto e libero, al costo C(m, i), oppure
+    lasciarlo scoperto, al costo della penalità. Euristiche: docs/ricerca.md §2.3–2.4.
     """
 
     def __init__(self, sc: Scenario):
         self.sc = sc
-        self.ammessi = {
-            i: [m for m in sc.idonei.get(i, []) if sc.costo[(m, i)] < INF] for i in sc.incidenti
-        }
-        self.minimo = {
-            i: min((sc.costo[(m, i)] for m in self.ammessi[i]), default=INF) for i in sc.incidenti
-        }
+        self.ammessi = {r: [m for m in sc.adatti.get(r, []) if sc.costo.get((m, r[0]), INF) < INF]
+                        for r in sc.ruoli}
+        self.mu = [min([sc.penalita] + [sc.costo[(m, r[0])] for m in self.ammessi[r]])
+                   for r in sc.ruoli]
+        self.coda_mu = [sum(self.mu[k:]) for k in range(len(sc.ruoli) + 1)]
 
-    def inizio(self) -> frozenset:
-        return frozenset()
+    def inizio(self) -> tuple:
+        return (0, frozenset())
 
-    def obiettivo(self, s: frozenset) -> bool:
-        return len(_servite(s)) == len(self.sc.incidenti)
+    def obiettivo(self, s: tuple) -> bool:
+        return s[0] == len(self.sc.ruoli)
 
-    def successori(self, s: frozenset):
-        servite = _servite(s)
-        occupati = _occupati(s)
-        for i in self.sc.incidenti:
-            if i in servite:
-                continue
-            for m in self.ammessi[i]:
-                if m not in occupati:
-                    yield s | {(m, i)}, self.sc.costo[(m, i)]
+    def successori(self, s: tuple):
+        k, occupati = s
+        if k == len(self.sc.ruoli):
+            return
+        r = self.sc.ruoli[k]
+        for m in self.ammessi[r]:
+            if m not in occupati:
+                yield (k + 1, occupati | {m}), self.sc.costo[(m, r[0])]
+        yield (k + 1, occupati), self.sc.penalita
 
-    def h_min(self, s: frozenset) -> float:
-        """Rilassamento: si rimuove l'esclusività dei mezzi. Minimo statico per incidente."""
-        servite = _servite(s)
-        return sum(self.minimo[i] for i in self.sc.incidenti if i not in servite)
+    def h_min(self, s: tuple) -> float:
+        """Rilassamento: si rimuove l'esclusività dei mezzi. Minimo statico per ruolo."""
+        return self.coda_mu[s[0]]
 
-    def h_libero(self, s: frozenset) -> float:
-        """Rilassamento: esclusività solo tra incidenti residui. Ammessi solo i mezzi liberi."""
-        servite = _servite(s)
-        occupati = _occupati(s)
+    def h_libero(self, s: tuple) -> float:
+        """Rilassamento: esclusività solo verso i mezzi già occupati, non tra ruoli residui."""
+        k, occupati = s
         totale = 0
-        for i in self.sc.incidenti:
-            if i in servite:
-                continue
-            liberi = [self.sc.costo[(m, i)] for m in self.ammessi[i] if m not in occupati]
-            if not liberi:
-                return INF
-            totale += min(liberi)
+        for r in self.sc.ruoli[k:]:
+            totale += min([self.sc.penalita] + [self.sc.costo[(m, r[0])] for m in self.ammessi[r]
+                                                if m not in occupati])
         return totale
 
+    def piano(self, cammino: tuple) -> tuple[list, list]:
+        """Dal cammino di stati: assegnazioni (mezzo, incidente, ruolo) e ruoli scoperti."""
+        assegnazioni, scoperti = [], []
+        for (k, occ), (_, occ2) in zip(cammino, cammino[1:]):
+            i, ruolo = self.sc.ruoli[k]
+            nuovo = occ2 - occ
+            if nuovo:
+                assegnazioni.append((next(iter(nuovo)), i, ruolo))
+            else:
+                scoperti.append((i, ruolo))
+        return assegnazioni, scoperti
 
-def _scenario_con_costi(caso: Caso, idonei: dict) -> Scenario | None:
+
+def costi_caso(caso: Caso) -> dict:
+    """Costo C(m, i) del livello 2 per ogni mezzo e incidente, dal livello 1."""
     costo = {}
     for i, (_, cella_i) in caso.incidenti.items():
-        for m in idonei.get(i, []):
-            _, cella_m = caso.mezzi[m]
+        for m, (_, cella_m) in caso.mezzi.items():
             r = distanza_griglia(caso.griglia, cella_m, cella_i)
             costo[(m, i)] = max(r.costo, COSTO_MINIMO) if r.completo and r.costo < INF else INF
-    for i in caso.incidenti:
-        if not any(costo.get((m, i), INF) < INF for m in idonei.get(i, [])):
-            return None
-    return Scenario(tuple(caso.incidenti), tuple(caso.mezzi), idonei, costo)
+    return costo
 
 
-def genera_caso(rng: random.Random, n_incidenti: int, n_mezzi: int) -> Caso:
+def scenario_da_adatti(adatti: dict, mezzi: tuple, costo: dict,
+                       penalita: float = config.PENALITA_RUOLO_SCOPERTO) -> Scenario:
+    ammessi = {r: [m for m in ms if costo.get((m, r[0]), INF) < INF] for r, ms in adatti.items()}
+    return Scenario(ordina_ruoli(list(adatti), ammessi), tuple(mezzi), adatti, costo, penalita)
+
+
+def adiacenze_caso(caso: Caso, soglia: int = config.DISTANZA_ADIACENZA) -> list[tuple]:
+    """Coppie di incidenti abbastanza vicini da propagare il pericolo."""
+    ids = sorted(caso.incidenti)
+    return [(a, b) for x, a in enumerate(ids) for b in ids[x + 1:]
+            if manhattan(caso.incidenti[a][1], caso.incidenti[b][1]) <= soglia]
+
+
+def genera_caso(rng: random.Random, n_incidenti: int, n_mezzi: int,
+                variabili: Callable | None = None) -> Caso:
+    """Griglia, flotta con la composizione di config e incidenti dal modello generativo."""
     griglia = genera_griglia(rng, *config.DIM_GRIGLIA, config.PROB_OSTACOLO)
     liberi = [(r, k) for r in range(griglia.righe) for k in range(griglia.colonne)
               if (r, k) not in griglia.ostacoli]
-    mezzi = {f"m{k}": (rng.choice(list(TipoMezzo)), rng.choice(liberi)) for k in range(n_mezzi)}
-    incidenti = {f"i{k}": (mg.genera_variabili(rng), rng.choice(liberi)) for k in range(n_incidenti)}
+    tipi = [TipoMezzo(t) for t in config.COMPOSIZIONE_FLOTTA]
+    pesi = list(config.COMPOSIZIONE_FLOTTA.values())
+    mezzi = {f"m{k}": (rng.choices(tipi, pesi)[0], rng.choice(liberi)) for k in range(n_mezzi)}
+    genera = variabili or mg.genera_variabili
+    incidenti = {f"i{k}": (genera(rng), rng.choice(liberi)) for k in range(n_incidenti)}
     return Caso(griglia, mezzi, incidenti)
 
 
-def prepara_scenario(caso: Caso, idonei_fn: Callable) -> Scenario | None:
-    """Calcola gli idonei e i costi del livello 2. None se un incidente non è raggiungibile."""
-    return _scenario_con_costi(caso, idonei_fn(caso))
+def carica_caso(kb, caso: Caso, gravita_stimata: dict | None = None) -> None:
+    """Asserisce nella KB i fatti del caso. Senza gravita_stimata vale la regola con la velocità vera."""
+    v = {i: var for i, (var, _) in caso.incidenti.items()}
+    kb.carica_scenario(
+        [dict(id=i, tipo=x["tipo_edificio"], piano=x["piano"], sostanze=x["sostanze_pericolose"],
+              persone=x["persone"], meteo=x["meteo"]) for i, x in v.items()],
+        {m: t for m, (t, _) in caso.mezzi.items()},
+        {i: (x["vulnerabilita"], x["adiacenti"]) for i, x in v.items()},
+        adiacenze_caso(caso),
+        {i: x["velocita_fuoco"] for i, x in v.items()},
+        gravita_stimata,
+    )
 
 
-def idonei_con_kb(kb) -> Callable:
-    """Restituisce la funzione che ricava gli idonei dalla KB Prolog per un caso."""
-    def idonei(caso: Caso) -> dict:
-        fatti = {i: v for i, (v, _) in caso.incidenti.items()}
-        kb.carica_scenario(
-            [dict(id=i, tipo=v["tipo_edificio"], piano=v["piano"], sostanze=v["sostanze_pericolose"],
-                  persone=v["persone"], meteo=v["meteo"]) for i, v in fatti.items()],
-            {m: t for m, (t, _) in caso.mezzi.items()},
-            {i: (v["vulnerabilita"], v["adiacenti"]) for i, v in fatti.items()},
-            [],
-            {i: v["velocita_fuoco"] for i, v in fatti.items()},
-        )
-        return {i: kb.mezzi_idonei(i) for i in caso.incidenti}
-    return idonei
+def adatti_con_kb(kb, caso: Caso, gravita_stimata: dict | None = None) -> dict:
+    """Ruoli richiesti e mezzi adatti, ricavati dalla KB Prolog."""
+    carica_caso(kb, caso, gravita_stimata)
+    return {(i, r): kb.mezzi_adatti(i, r) for i in sorted(caso.incidenti) for r in kb.squadra(i)}
+
+
+def prepara_scenario(caso: Caso, adatti_fn: Callable) -> Scenario:
+    """Ruoli e mezzi adatti da adatti_fn(caso), costi dal livello 1."""
+    return scenario_da_adatti(adatti_fn(caso), tuple(caso.mezzi), costi_caso(caso))
 
 
 # --- Confronto sperimentale --------------------------------------------------
@@ -264,22 +294,14 @@ def _dev(valori: list) -> float:
     return statistics.stdev(valori) if len(valori) > 1 else 0.0
 
 
-def confronto(seme: int, dimensioni: list, n_scenari: int, idonei_fn: Callable,
+def confronto(seme: int, dimensioni: list, n_scenari: int, adatti_fn: Callable,
               mezzi_per_incidente: float = config.N_MEZZI_PER_INCIDENTE) -> list[dict]:
     rng = random.Random(seme)
     righe = []
     for n in dimensioni:
         n_mezzi = math.ceil(n * mezzi_per_incidente)
-        valide = 0
-        tentativi = 0
-        while valide < n_scenari:
-            tentativi += 1
-            if tentativi > 1000 * n_scenari:
-                raise RuntimeError(f"troppi casi senza soluzione per n={n}")
-            sc = prepara_scenario(genera_caso(rng, n, n_mezzi), idonei_fn)
-            if sc is None:
-                continue
-            valide += 1
+        for k in range(1, n_scenari + 1):
+            sc = prepara_scenario(genera_caso(rng, n, n_mezzi), adatti_fn)
             p = Dispatch(sc)
             esiti = {}
             for alg in ALGORITMI:
@@ -288,10 +310,12 @@ def confronto(seme: int, dimensioni: list, n_scenari: int, idonei_fn: Callable,
             costi = {r.costo for r, _ in esiti.values() if r.completo}
             if len(costi) > 1:
                 raise AssertionError(f"algoritmi completi con costi diversi: {costi}")
+            migliore = esiti["A* h_libero"][0]
+            scoperti = len(p.piano(migliore.cammino)[1]) if migliore.completo else None
             for alg, (r, secondi) in esiti.items():
-                righe.append(dict(dimensione=n, scenario=valide, algoritmo=alg, costo=r.costo,
-                                  espansi=r.espansi, generati=r.generati, secondi=secondi,
-                                  completo=r.completo))
+                righe.append(dict(dimensione=n, scenario=k, ruoli=len(sc.ruoli), algoritmo=alg,
+                                  costo=r.costo, scoperti=scoperti, espansi=r.espansi,
+                                  generati=r.generati, secondi=secondi, completo=r.completo))
     return righe
 
 
@@ -305,6 +329,8 @@ def riepilogo(righe: list[dict]) -> list[dict]:
         sec = [r["secondi"] for r in rs]
         out.append(dict(
             dimensione=n, algoritmo=alg, casi=len(rs),
+            ruoli_media=statistics.mean(r["ruoli"] for r in rs),
+            scoperti_media=statistics.mean(r["scoperti"] for r in rs if r["scoperti"] is not None),
             completi=sum(r["completo"] for r in rs),
             espansi_media=statistics.mean(esp), espansi_dev=_dev(esp),
             secondi_media=statistics.mean(sec), secondi_dev=_dev(sec),
@@ -323,12 +349,15 @@ def _scrivi_csv(righe: list[dict], percorso: Path) -> None:
 if __name__ == "__main__":
     from prolog_engine import KnowledgeBase
 
+    kb = KnowledgeBase()
     righe = confronto(config.SEME, config.N_INCIDENTI_SCENARI, config.N_SCENARI_PER_DIMENSIONE,
-                      idonei_con_kb(KnowledgeBase()))
+                      lambda caso: adatti_con_kb(kb, caso))
     _scrivi_csv(righe, config.RESULTS_DIR / "search_confronto.csv")
     tabella = riepilogo(righe)
     _scrivi_csv(tabella, config.RESULTS_DIR / "search_riepilogo.csv")
-    print(f"{'n':>3} {'algoritmo':12s} {'completi':>9s} {'espansi (media ± dev)':>24s} {'secondi (media)':>16s}")
+    print(f"{'n':>3} {'ruoli':>6} {'algoritmo':12s} {'completi':>9s} {'espansi (media ± dev)':>24s} "
+          f"{'secondi (media)':>16s}")
     for t in tabella:
-        print(f"{t['dimensione']:>3} {t['algoritmo']:12s} {t['completi']:>4}/{t['casi']:<4} "
-              f"{t['espansi_media']:>12.1f} ± {t['espansi_dev']:<9.1f} {t['secondi_media']:>16.6f}")
+        print(f"{t['dimensione']:>3} {t['ruoli_media']:>6.1f} {t['algoritmo']:12s} "
+              f"{t['completi']:>4}/{t['casi']:<4} {t['espansi_media']:>12.1f} ± {t['espansi_dev']:<9.1f} "
+              f"{t['secondi_media']:>16.6f}")

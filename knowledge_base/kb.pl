@@ -9,30 +9,13 @@
 :- dynamic adiacenza/2.        % adiacenza(IdA, IdB), caricata nei due versi
 :- dynamic mezzo/2.            % mezzo(Id, TipoMezzo)
 :- dynamic velocita_stimata/2. % velocita_stimata(Id, Velocita)
-:- dynamic assegnato/2.        % assegnato(IdMezzo, IdIncidente)
-
-% Idoneita dei mezzi.
-requisito(autopompa, _, _, _).
-requisito(autoscala, Tipo, Piano, _) :-
-    Tipo \== bosco,
-    soglia_piani_autoscala(S),
-    Piano >= S.
-requisito(nucleo_nbcr, _, _, si).
-requisito(canadair, bosco, _, _).
+:- dynamic gravita_stimata/2.  % gravita_stimata(Id, Gravita): stima esterna (ML, rete), se presente
+:- dynamic assegnato/3.        % assegnato(IdMezzo, IdIncidente, Ruolo)
 
 % Il canadair non interviene dove ci sono sostanze pericolose (negazione per fallimento).
 incompatibile(M, I) :-
     mezzo(M, canadair),
     incidente(I, _, _, si, _, _).
-
-idoneo(M, I) :-
-    mezzo(M, T),
-    incidente(I, Tipo, Piano, Sost, _, _),
-    requisito(T, Tipo, Piano, Sost),
-    \+ incompatibile(M, I).
-
-mezzi_idonei(I, Lista) :-
-    findall(M, idoneo(M, I), Lista).
 
 % Gravita: stessi punteggi e soglie di modello_generativo.regola_gravita.
 punteggio(Persone, Vel, Sost, Vuln, Adj, P) :-
@@ -75,31 +58,113 @@ collegato(A, B, Visitati) :-
     \+ memberchk(C, Visitati),
     collegato(C, B, [C|Visitati]).
 
+% Gravita di partenza: la stima esterna se c'e (ML o rete bayesiana), altrimenti la regola
+% applicata alla velocita stimata del fuoco.
+gravita_base(I, G) :-
+    gravita_stimata(I, G0),
+    !,
+    G = G0.
+gravita_base(I, G) :-
+    gravita(I, G).
+
 esposto(I) :-
-    gravita(J, critico),
+    gravita_base(J, critico),
     J \== I,
     collegato(I, J).
 
 % Gravita operativa: un incidente alto esposto a uno critico e trattato come critico.
 % Non sostituisce la gravita del dataset, che resta il target del ML.
-gravita_operativa(I, critico) :-
-    gravita(I, alto),
-    esposto(I),
-    !.
+% Forma deterministica: corretta anche quando G e gia legata (ad esempio G = alto).
 gravita_operativa(I, G) :-
-    gravita(I, G).
+    gravita_base(I, G0),
+    (   G0 == alto, esposto(I)
+    ->  G = critico
+    ;   G = G0
+    ).
+
+% Composizione della squadra. Ogni ruolo richiesto da un incidente va coperto da un mezzo distinto.
+ruolo(I, estinzione) :-
+    incidente(I, _, _, _, _, _).
+ruolo(I, rinforzo) :-
+    gravita_operativa(I, critico).
+ruolo(I, soccorso_quota) :-
+    incidente(I, Tipo, Piano, _, Persone, _),
+    Tipo \== bosco,
+    soglia_piani_autoscala(S),
+    Piano >= S,
+    persone_da_soccorrere(I, Persone).
+ruolo(I, decontaminazione) :-
+    incidente(I, _, _, si, _, _).
+
+% Persone incerte in quota: si manda l'autoscala solo se la gravita non e bassa.
+persone_da_soccorrere(_, confermate).
+persone_da_soccorrere(I, incerte) :-
+    gravita_operativa(I, G),
+    G \== basso.
+
+squadra_richiesta(I, Ruoli) :-
+    findall(R, ruolo(I, R), Ruoli).
+
+% Quali tipi di mezzo possono coprire un ruolo.
+adatto(autopompa, estinzione, _).
+adatto(autopompa, rinforzo, _).
+adatto(canadair, estinzione, I) :- incidente(I, bosco, _, _, _, _).
+adatto(canadair, rinforzo, I) :- incidente(I, bosco, _, _, _, _).
+adatto(autoscala, soccorso_quota, _).
+adatto(nucleo_nbcr, decontaminazione, _).
+
+copre(M, I, R) :-
+    ruolo(I, R),
+    mezzo(M, T),
+    adatto(T, R, I),
+    \+ incompatibile(M, I).
+
+mezzi_adatti(I, R, Lista) :-
+    findall(M, copre(M, I, R), Lista).
+
+% Un mezzo e idoneo per un incidente se copre almeno uno dei suoi ruoli.
+idoneo(M, I) :-
+    mezzo(M, _),
+    incidente(I, _, _, _, _, _),
+    once(copre(M, I, _)).
+
+mezzi_idonei(I, Lista) :-
+    findall(M, idoneo(M, I), Lista).
+
+% Spiegazioni: perche un ruolo e richiesto.
+motivo(I, estinzione, incendio_segnalato) :-
+    ruolo(I, estinzione).
+motivo(I, rinforzo, gravita_critica) :-
+    gravita_base(I, critico).
+motivo(I, rinforzo, esposto_a(J)) :-
+    gravita_base(I, alto),
+    gravita_base(J, critico),
+    J \== I,
+    collegato(I, J).
+motivo(I, soccorso_quota, persone_in_quota(Persone, Piano)) :-
+    ruolo(I, soccorso_quota),
+    incidente(I, _, Piano, _, Persone, _).
+motivo(I, decontaminazione, sostanze_pericolose) :-
+    ruolo(I, decontaminazione).
 
 % Integrita delle assegnazioni: una proposta valida non produce violazioni.
+% Un ruolo lasciato scoperto non e una violazione di integrita ma una richiesta di rinforzi,
+% segnalata a parte da ruolo_scoperto/2.
 violazione(doppia_assegnazione(M)) :-
-    assegnato(M, I1),
-    assegnato(M, I2),
-    I1 @< I2.
-violazione(non_idoneo(M, I)) :-
-    assegnato(M, I),
-    \+ idoneo(M, I).
-violazione(incidente_scoperto(I)) :-
-    incidente(I, _, _, _, _, _),
-    \+ assegnato(_, I).
+    assegnato(M, I1, R1),
+    assegnato(M, I2, R2),
+    (I1, R1) @< (I2, R2).
+violazione(non_adatto(M, I, R)) :-
+    assegnato(M, I, R),
+    \+ copre(M, I, R).
+violazione(ruolo_coperto_due_volte(I, R)) :-
+    assegnato(M1, I, R),
+    assegnato(M2, I, R),
+    M1 @< M2.
+
+ruolo_scoperto(I, R) :-
+    ruolo(I, R),
+    \+ assegnato(_, I, R).
 
 % Conteggi delle clausole di questo file, per la relazione.
 kb_statistiche(NPred, NRegole, NClausole) :-

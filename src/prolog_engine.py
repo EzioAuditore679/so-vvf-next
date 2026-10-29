@@ -24,8 +24,10 @@ _DINAMICI = [
     "adiacenza(_,_)",
     "mezzo(_,_)",
     "velocita_stimata(_,_)",
-    "assegnato(_,_)",
+    "gravita_stimata(_,_)",
+    "assegnato(_,_,_)",
 ]
+RUOLI = ["estinzione", "rinforzo", "soccorso_quota", "decontaminazione"]
 
 
 def _valore(x) -> str:
@@ -53,12 +55,15 @@ class KnowledgeBase:
         self._q(", ".join(f"retractall({d})" for d in _DINAMICI))
 
     def carica_scenario(self, incidenti: list[dict], mezzi: dict, registro: dict,
-                        adiacenze: list[tuple], velocita: dict) -> None:
+                        adiacenze: list[tuple], velocita: dict | None = None,
+                        gravita_stimata: dict | None = None) -> None:
         """Carica i fatti di uno scenario.
 
         incidenti: dict con chiavi id, tipo, piano, sostanze, persone, meteo.
         mezzi: {id_mezzo: TipoMezzo}. registro: {id_incidente: (Vulnerabilita, n_adiacenti)}.
         adiacenze: coppie (id_a, id_b). velocita: {id_incidente: VelocitaFuoco}.
+        gravita_stimata: {id_incidente: Gravita} da una fonte esterna (ML, rete). Se presente,
+        prevale sulla regola applicata alla velocità (gravita_base/2 in kb.pl).
         """
         self.reset()
         for inc in incidenti:
@@ -72,8 +77,10 @@ class KnowledgeBase:
             self._q(f"assertz(registro({_id(i)}, {_valore(vuln)}, {int(n_adj)}))")
         for a, b in adiacenze:
             self._q(f"assertz(adiacenza({_id(a)}, {_id(b)})), assertz(adiacenza({_id(b)}, {_id(a)}))")
-        for i, v in velocita.items():
+        for i, v in (velocita or {}).items():
             self._q(f"assertz(velocita_stimata({_id(i)}, {_valore(v)}))")
+        for i, g in (gravita_stimata or {}).items():
+            self._q(f"assertz(gravita_stimata({_id(i)}, {_valore(g)}))")
 
     def mezzi_idonei(self, incidente: str) -> list[str]:
         r = self._q(f"mezzi_idonei({_id(incidente)}, L)")
@@ -99,18 +106,45 @@ class KnowledgeBase:
         r = self._q(f"setof(B, collegato({_id(incidente)}, B), L) -> true ; L = []")
         return (set(r[0]["L"]) if r else set()) - {incidente}
 
-    def violazioni(self, assegnazioni: list[tuple]) -> list[str]:
-        """Verifica una proposta di dispatch come coppie (id_mezzo, id_incidente).
+    def squadra(self, incidente: str) -> list[str]:
+        """Ruoli richiesti dall'incidente, nell'ordine di RUOLI."""
+        r = self._q(f"squadra_richiesta({_id(incidente)}, L)")
+        ruoli = {str(x) for x in r[0]["L"]} if r else set()
+        return [x for x in RUOLI if x in ruoli]
 
-        Una lista di coppie, non un dict, permette di esprimere anche un mezzo assegnato
-        due volte. Lista vuota = proposta valida.
+    def mezzi_adatti(self, incidente: str, ruolo: str) -> list[str]:
+        r = self._q(f"mezzi_adatti({_id(incidente)}, {_id(ruolo)}, L)")
+        return sorted(str(m) for m in r[0]["L"]) if r else []
+
+    def motivi(self, incidente: str) -> list[tuple[str, str]]:
+        """Spiegazione della squadra: coppie (ruolo, motivo) prodotte da motivo/3."""
+        r = self._q(f"findall(S, (motivo({_id(incidente)}, R, M), format(atom(S), '~w|~w', [R, M])), L)")
+        coppie = []
+        for x in (r[0]["L"] if r else []):
+            ruolo, motivo = str(x).split("|", 1)
+            coppie.append((ruolo, motivo))
+        return sorted(set(coppie), key=lambda c: (RUOLI.index(c[0]), c[1]))
+
+    def _con_assegnazioni(self, assegnazioni: list[tuple], goal: str) -> list[str]:
+        self._q("retractall(assegnato(_,_,_))")
+        for m, i, ruolo in assegnazioni:
+            self._q(f"assertz(assegnato({_id(m)}, {_id(i)}, {_id(ruolo)}))")
+        r = self._q(goal)
+        self._q("retractall(assegnato(_,_,_))")
+        return sorted(str(x) for x in r[0]["L"]) if r else []
+
+    def violazioni(self, assegnazioni: list[tuple]) -> list[str]:
+        """Verifica una proposta di dispatch come triple (id_mezzo, id_incidente, ruolo).
+
+        Una lista, non un dict, permette di esprimere anche un mezzo assegnato due volte.
+        Lista vuota = proposta valida. I ruoli scoperti sono riportati da ruoli_scoperti.
         """
-        self._q("retractall(assegnato(_,_))")
-        for m, i in assegnazioni:
-            self._q(f"assertz(assegnato({_id(m)}, {_id(i)}))")
-        r = self._q("findall(S, (violazione(V), format(atom(S), '~w', [V])), L)")
-        self._q("retractall(assegnato(_,_))")
-        return sorted(r[0]["L"]) if r else []
+        return self._con_assegnazioni(
+            assegnazioni, "findall(S, (violazione(V), format(atom(S), '~w', [V])), L)")
+
+    def ruoli_scoperti(self, assegnazioni: list[tuple]) -> list[str]:
+        return self._con_assegnazioni(
+            assegnazioni, "findall(S, (ruolo_scoperto(I, R), format(atom(S), '~w-~w', [I, R])), L)")
 
     def complessita(self) -> dict:
         r = self._q("kb_statistiche(P, R, C)")
