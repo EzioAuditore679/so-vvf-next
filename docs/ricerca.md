@@ -4,7 +4,7 @@ Documento di riferimento per `src/search.py` e `tests/test_search.py`. Segue il 
 "Ricerca in Spazi di Stati" del corso (sezioni 2.2–2.8, Proposizioni 2.1 e 2.2, Tabella 2.1).
 
 Il problema è risolto su due livelli. Il livello 1 calcola le distanze tra stazioni e incidenti.
-Il livello 2 decide quale mezzo va a quale incidente, usando quelle distanze come costi.
+Il livello 2 decide quali mezzi coprono i ruoli richiesti da ciascun incidente, usando quelle distanze come costi.
 
 ---
 
@@ -54,100 +54,91 @@ con le distanze esatte calcolate da una BFS a ritroso.
 
 ---
 
-## 2. Livello 2: assegnazione dei mezzi
+## 2. Livello 2: copertura dei ruoli della squadra
 
 ### 2.1 Rappresentazione
 
+La gravità di un incidente decide la squadra. La KB Prolog (`ruolo/2` in `knowledge_base/kb.pl`) deriva
+i ruoli richiesti: `estinzione` sempre, `rinforzo` se la gravità operativa è critica, `soccorso_quota`
+con persone ai piani alti (le persone incerte contano solo se la gravità non è bassa),
+`decontaminazione` con sostanze pericolose. La KB dà anche i mezzi adatti a ogni ruolo (`copre/3`).
+Sul modello generativo un incidente richiede in media 1.6 ruoli.
+
+Il dispatch è un CSP risolto con la ricerca: una variabile per ruolo, i valori sono i mezzi adatti
+e il valore speciale *scoperto*.
+
 | Elemento | Definizione |
 |---|---|
-| Stati | insiemi $s = \{(m_1, i_1), \ldots, (m_k, i_k)\}$ di assegnazioni, con ogni $m$ e ogni $i$ al più una volta |
-| Stato iniziale | $s_0 = \emptyset$ |
-| Azioni | assegnare un incidente $i \notin s$ a un mezzo $m$ idoneo e libero |
-| Transizione | $s' = s \cup \{(m, i)\}$ |
-| Costo di un'azione | $C(m, i) = \max(T(m, i), 1)$, con $T$ la distanza del livello 1 |
-| Obiettivo | tutti gli incidenti sono serviti |
-| Soluzione | insieme di assegnazioni di costo minimo |
+| Variabili | ruoli $r_1, \ldots, r_R$, coppie (incidente, ruolo), in ordine fisso (§2.2) |
+| Stati | $s = (k, O)$: i primi $k$ ruoli sono decisi, $O$ è l'insieme dei mezzi occupati |
+| Stato iniziale | $(0, \emptyset)$ |
+| Azioni sul ruolo $r_{k+1}$ | un mezzo $m \notin O$ adatto e raggiungibile, costo $C(m, i)$; oppure *scoperto*, costo $P$ |
+| Obiettivo | $k = R$ |
+| Costo di una soluzione | $\sum C(m, i)$ sulle assegnazioni $+\; P \cdot$ (ruoli scoperti) |
 
-**Idoneità.** Quali mezzi possono servire un incidente viene dalla knowledge base Prolog
-(`idoneo/2` in `knowledge_base/kb.pl`), non dal codice Python.
+**Lo stato non memorizza le assegnazioni.** Due assegnazioni parziali con lo stesso $k$ e gli stessi
+mezzi occupati hanno lo stesso futuro: stessi ruoli residui, stessi mezzi liberi. Sono quindi lo stesso
+stato, e la lista dei chiusi elimina i cammini multipli (§2.7.2 del corso). Le assegnazioni si ricostruiscono
+dal cammino (`Dispatch.piano`).
 
-**Stati come insiemi.** Ordini diversi della stessa assegnazione producono lo stesso stato. Per questo lo stato
-è un `frozenset`, e la lista dei chiusi riconosce i duplicati (potatura dei cammini multipli, §2.7.2 del corso).
-Senza questa scelta lo spazio si gonfia per permutazioni.
+**Ruolo scoperto.** Se la flotta non basta, un ruolo resta scoperto e si chiede un rinforzo a un comando
+vicino, al costo fisso $P$ = `config.PENALITA_RUOLO_SCOPERTO` = 60. Il valore supera il tempo di
+percorrenza tipico sulla griglia $20 \times 20$, quindi la ricerca lascia scoperto un ruolo solo quando
+non ha alternative ragionevoli. Ogni scenario ha così una soluzione, e la valutazione end-to-end (§6)
+può contare i ruoli scoperti invece di scartare gli scenari.
 
-**Dimensione dello spazio di stati.** Con $n$ incidenti e $m$ mezzi, il numero di stati raggiungibili è
+### 2.2 Ordine delle variabili: MRV statico
 
-$$\sum_{k=0}^{n} \binom{n}{k} \cdot \frac{m!}{(m-k)!}$$
+I ruoli sono ordinati una volta per tutte per numero crescente di mezzi ammessi (minimum remaining values,
+dal capitolo sui CSP). L'ordine non cambia l'ottimo, perché ogni assegnazione completa resta raggiungibile
+esattamente una volta. Riduce i rami: i ruoli con un solo mezzo possibile, ad esempio il soccorso in quota
+con una sola autoscala, vengono decisi per primi.
 
-Per $n = 6$ e $m = 9$ (il caso più grande dell'esperimento) sono 207 775 stati. Per $n = 4$ e $m = 6$ sono 1 045.
-Il limite `config.LIMITE_NODI = 500 000` è sopra il massimo, ma la ricerca termina prima in pratica (§5).
+### 2.3 $\varepsilon = 1$
 
-### 2.2 Costo minimo di un'assegnazione: $\varepsilon = 1$
+La Proposizione 2.1 chiede costi maggiori di un $\varepsilon > 0$. Un mezzo nella stessa cella
+dell'incidente avrebbe $T = 0$, quindi $C(m, i) = \max(T(m, i), 1)$. Anche $P \ge 1$.
+Verificato in `test_costo_minimo_di_una_assegnazione_e_uno`.
 
-La Proposizione 2.1 del corso chiede costi maggiori di un $\varepsilon > 0$, altrimenti la ricerca potrebbe non
-terminare. Un incidente nella stessa cella della stazione darebbe $T = 0$. Per questo ogni assegnazione
-costa almeno $\varepsilon = 1$:
+### 2.4 Problema semplificato 1: si rimuove l'esclusività dei mezzi
 
-$$C(m, i) = \max(T(m, i), 1)$$
+Ogni ruolo residuo prende il valore più economico tra i mezzi adatti, anche se già occupati, e la penalità:
 
-Il costo della soluzione è quindi $\sum C(m,i)$ e non $\sum T(m,i)$. La differenza vale solo per gli
-incidenti nella stessa cella della stazione, e tutti gli algoritmi usano lo stesso $C$, quindi il confronto
-resta equo. Il costo minimo è riportato in `COSTO_MINIMO` e verificato in `test_costo_minimo_di_una_assegnazione_e_uno`.
+$$h_{\min}(k, O) = \sum_{j > k} \mu_j \qquad \mu_j = \min\Big(P,\ \min_{m \in \text{adatti}(r_j)} C(m, i_j)\Big)$$
 
-### 2.3 Problema semplificato 1: si rimuove l'esclusività dei mezzi
+- **Ammissibilità.** Ogni completamento reale è anche un completamento del problema rilassato, con lo
+  stesso costo; il rilassato ha più soluzioni, quindi il suo ottimo non supera quello reale.
+- **Consistenza.** $\mu_j$ non dipende dallo stato. L'azione sul ruolo $r_{k+1}$ costa almeno $\mu_{k+1}$
+  e riduce $h$ di esattamente $\mu_{k+1}$, quindi $h(s) \le c + h(s')$.
 
-Il problema reale chiede di assegnare gli incidenti residui $R = \{i \notin s\}$ a mezzi distinti.
-Il rilassamento ignora l'esclusività: ogni incidente residuo prende il mezzo idoneo più vicino, anche se occupato
-o già assegnato a un altro incidente.
+### 2.5 Problema semplificato 2: esclusività solo verso i mezzi già occupati
 
-$$h_{\min}(s) = \sum_{i \in R} \mu_i \qquad \mu_i = \min_{m \in \text{idonei}(i)} C(m, i)$$
+I mezzi in $O$ restano esclusi; tra i ruoli residui un mezzo libero può essere usato più volte:
 
-- **Ammissibilità.** Ogni soluzione reale è anche una soluzione del rilassato, con lo stesso costo.
-  Il rilassato ha più soluzioni, quindi il suo ottimo non supera quello reale.
-- **Consistenza.** Il valore $\mu_i$ è statico: non dipende dallo stato. Un'azione che serve $i$ con il mezzo $m$
-  riduce $h$ di esattamente $\mu_i \le C(m, i)$. Quindi $h(s) \le C(m,i) + h(s')$.
+$$h_{\text{libero}}(k, O) = \sum_{j > k} \min\Big(P,\ \min_{m \in \text{adatti}(r_j) \setminus O} C(m, i_j)\Big)$$
 
-### 2.4 Problema semplificato 2: esclusività solo tra incidenti residui
+- **Ammissibilità.** Nel completamento reale ogni ruolo residuo usa un mezzo libero adatto oppure la penalità,
+  quindi costa almeno il minimo calcolato su $\text{adatti}(r_j) \setminus O$ e $P$.
+- **Consistenza.** L'azione sul ruolo $r_{k+1}$ ha costo $c$. Il termine di $r_{k+1}$ esce dalla somma ed è
+  $\le c$, perché $c$ è uno dei valori su cui si prende il minimo. Gli altri termini non diminuiscono, perché
+  $O$ può solo crescere. Quindi $h(s') \ge h(s) - c$.
 
-Il secondo rilassamento è più stretto. Ammette che più incidenti residui usino lo stesso mezzo, ma i mezzi già
-occupati dallo stato restano esclusi.
+Per ogni stato $h_{\text{libero}} \ge h_{\min}$, quindi A* con $h_{\text{libero}}$ è più informato.
+Grazie alla penalità nessuna delle due vale $\infty$.
 
-$$h_{\text{libero}}(s) = \sum_{i \in R} \min_{m \in \text{idonei}(i) \cap L(s)} C(m, i)$$
-
-dove $L(s)$ è l'insieme dei mezzi liberi in $s$. Se per un incidente residuo non ci sono mezzi liberi idonei,
-$h_{\text{libero}}(s) = \infty$: lo stato è un vicolo cieco e viene scartato.
-
-- **Ammissibilità.** Nella soluzione reale ogni incidente residuo usa un mezzo libero idoneo, quindi costa almeno
-  il minimo su $\text{idonei}(i) \cap L(s)$.
-- **Consistenza.** Sia $i$ l'incidente servito dall'azione con il mezzo $m$, costo $c = C(m, i)$.
-  Il mezzo $m$ esce dai liberi, quindi per ogni $j \in R \setminus \{i\}$ il minimo non diminuisce:
-
-  $$h(s') \ge \sum_{j \in R\setminus\{i\}} \min_{L(s)} C(\cdot, j) = h(s) - \min_{L(s)} C(\cdot, i) \ge h(s) - c$$
-
-  Quindi $h(s) \le c + h(s')$.
-
-### 2.5 Confronto tra le due euristiche
-
-Per ogni stato $h_{\text{libero}}(s) \ge h_{\min}(s)$: i minimi sono calcolati su un insieme più piccolo di mezzi.
-Quindi $h_{\text{libero}}$ è più informativa, e A* con $h_{\text{libero}}$ espande un sottoinsieme di quello con $h_{\min}$.
-Il test `test_dispatch_euristiche_ammissibili_consistenti_e_algoritmi_ottimi` verifica questa relazione su tutti
-gli stati raggiungibili.
-
-**Non si usa una euristica esatta.** Il sottoproblema residuo (assegnare gli incidenti ai mezzi liberi
-con costo minimo) è un problema di assegnamento risolvibile con l'algoritmo ungherese. Risolverlo dentro $h$
-significa risolvere il problema intero a ogni stato, e il confronto non avrebbe senso.
-Per questo nessuna delle due euristiche è esatta: l'ottimo viene calcolato separatamente per la verifica.
+**Non si usa un'euristica esatta.** Il sottoproblema residuo è un problema di assegnamento risolvibile con
+l'algoritmo ungherese: risolverlo dentro $h$ significa risolvere il problema intero a ogni stato.
 
 ### 2.6 Verifica esaustiva
 
-Per istanze piccole il test calcola il costo ottimo esatto $V(s)$ di ogni stato raggiungibile con la
-programmazione dinamica sugli stati, e controlla:
+`test_dispatch_euristiche_ammissibili_consistenti_e_algoritmi_ottimi`, su 30 istanze casuali con 2–4 incidenti,
+1–3 ruoli ciascuno, 2–6 mezzi e alcuni archi irraggiungibili, calcola il costo ottimo $V(s)$ di ogni stato
+raggiungibile con la programmazione dinamica e controlla:
 
-- $h(s) \le V(s)$ per ogni stato (ammissibilità);
-- $h(s) \le C(m,i) + h(s')$ per ogni arco (consistenza);
-- A* con $h_{\min}$, A* con $h_{\text{libero}}$ e LcFS trovano tutti $V(s_0)$ (ottimalità).
-
-Sono 25 istanze casuali con 2–4 incidenti, 2–5 mezzi e costi in $[1, 6]$ con alcuni archi irraggiungibili.
+- $h(s) \le V(s)$ per ogni stato, e $h_{\min}(s) \le h_{\text{libero}}(s)$;
+- $h(s) \le c + h(s')$ per ogni arco;
+- LcFS, A* con $h_{\min}$ e A* con $h_{\text{libero}}$ trovano $V(s_0)$, e il piano ricostruito usa mezzi
+  distinti e ha esattamente quel costo.
 
 ---
 
@@ -180,60 +171,61 @@ A* ordina la frontiera per $f = g + h$. Con $h$ ammissibile e consistente:
 | Branch and bound | sì | $O(bd)$ | memoria lineare, da usare solo se `LIMITE_NODI` viene superato |
 | IDA\* | sì | $O(bd)$ | rivisita i nodi, più costoso con costi reali |
 
-Con $n \le 6$ lo spazio è piccolo rispetto alla memoria disponibile, quindi la memoria non è il vincolo principale
+Con $n \le 10$ lo spazio resta sotto `LIMITE_NODI` (il caso peggiore, LcFS a $n = 10$, espande circa 472 000 nodi: vicino al limite, quindi $n = 10$ è la dimensione massima dell'esperimento), quindi la memoria non è il vincolo principale
 e A* resta la scelta. Branch and bound e IDA\* restano documentati come alternative per istanze più grandi.
 
 ---
 
 ## 4. Protocollo sperimentale
 
-- Dimensioni: $n \in \{2, 3, 4, 5, 6\}$ incidenti (`config.N_INCIDENTI_SCENARI`).
-- Mezzi: $\lceil 1.5 \cdot n \rceil$ (`config.N_MEZZI_PER_INCIDENTE`), di tipo uniforme tra i quattro della `TipoMezzo`.
-- Scenari: 20 per dimensione (`config.N_SCENARI_PER_DIMENSIONE`), generati dal seme `config.SEME`.
-- Griglia: $20 \times 20$, ostacoli con probabilità 0.2. Stazioni e incidenti in celle libere casuali.
-- Uno scenario è valido se ogni incidente ha almeno un mezzo idoneo e raggiungibile. Gli scenari non validi
-  vengono ricampionati.
-- Per ogni scenario si eseguono LcFS, A* con $h_{\min}$ e A* con $h_{\text{libero}}$. Il test verifica che i costi
-  siano uguali; se non lo sono, l'esperimento si ferma.
-- Metriche: nodi espansi, nodi generati, tempo, numero di casi completati entro `LIMITE_NODI`.
-- Output: `results/search_confronto.csv` (una riga per scenario e algoritmo) e `results/search_riepilogo.csv`
-  (media ± deviazione standard per dimensione).
-
-Esecuzione: `python src/search.py`.
+- Dimensioni: $n \in \{2, 4, 6, 8, 10\}$ incidenti (`config.N_INCIDENTI_SCENARI`), 20 scenari ciascuna,
+  generati dal seme `config.SEME`.
+- Incidenti dal modello generativo; ruoli e mezzi adatti dalla KB, con la velocità vera del fuoco.
+  Due incidenti a distanza di Manhattan $\le 3$ sono adiacenti, quindi la propagazione del pericolo
+  (`esposto/1`) può aggiungere un rinforzo.
+- Flotta: $\lceil 2.2\, n \rceil$ mezzi, con tipo estratto dalla composizione `config.COMPOSIZIONE_FLOTTA`
+  (autopompe 50%, NBCR 20%, canadair 15%, autoscale 15%), proporzionale alla domanda media dei ruoli.
+- Griglia $20 \times 20$ con ostacoli al 20%. Costi dal livello 1.
+- Su ogni scenario LcFS, A* $h_{\min}$ e A* $h_{\text{libero}}$; l'esperimento si ferma se due algoritmi
+  completi danno costi diversi.
+- Output: `results/search_confronto.csv` e `results/search_riepilogo.csv`. Esecuzione: `python src/search.py`.
 
 ---
 
 ## 5. Risultati
 
-Esperimento eseguito con i parametri di `config.py`. Tutti i 100 casi per algoritmo sono completati
-entro `LIMITE_NODI`, e i tre algoritmi trovano lo stesso costo ottimo su ogni scenario.
-
+Tutti i 100 casi per algoritmo sono completati entro `LIMITE_NODI`, con lo stesso costo ottimo.
 Nodi espansi, media ± deviazione standard su 20 scenari:
 
-| $n$ | LcFS | A\* $h_{\min}$ | A\* $h_{\text{libero}}$ |
-|---|---|---|---|
-| 2 | 3.9 ± 0.8 | 3.5 ± 0.7 | 2.8 ± 1.1 |
-| 3 | 17.4 ± 8.3 | 11.9 ± 5.3 | 7.0 ± 3.3 |
-| 4 | 71.3 ± 45.2 | 33.7 ± 10.7 | 17.8 ± 8.4 |
-| 5 | 373.4 ± 329.4 | 136.1 ± 93.7 | 62.4 ± 52.6 |
-| 6 | 1884.0 ± 1977.7 | 856.2 ± 569.3 | 367.9 ± 321.0 |
+| $n$ | ruoli (media) | LcFS | A\* $h_{\min}$ | A\* $h_{\text{libero}}$ |
+|---|---|---|---|---|
+| 2 | 2.9 | 4.4 ± 1.6 | 3.4 ± 1.3 | 3.0 ± 1.2 |
+| 4 | 6.8 | 48.5 ± 52.0 | 25.0 ± 29.1 | 19.0 ± 24.0 |
+| 6 | 10.8 | 922 ± 1843 | 550 ± 1233 | 432 ± 1006 |
+| 8 | 13.7 | 3204 ± 4467 | 1460 ± 2868 | 1142 ± 2733 |
+| 10 | 16.6 | 78 800 ± 121 571 | 45 979 ± 85 564 | 32 047 ± 65 228 |
 
-**Lettura.** $h_{\text{libero}}$ riduce gli espansi di circa cinque volte rispetto a LcFS per $n = 6$, e di circa
-2.3 volte rispetto a $h_{\min}$. Il vantaggio cresce con $n$, come previsto dalla teoria. La deviazione standard
-è grande rispetto alla media: la difficoltà dipende molto dalla disposizione dei mezzi, e lo scenario conta più
-dell'algoritmo. I tempi restano sotto i 0.02 secondi per caso.
+**Lettura.**
+- A* con $h_{\text{libero}}$ espande circa 2.5 volte meno nodi di LcFS a $n = 10$, e il rapporto cresce
+  con $n$. $h_{\min}$ sta in mezzo, come previsto da $h_{\min} \le h_{\text{libero}}$.
+- Il guadagno in tempo è minore di quello in nodi: $h_{\text{libero}}$ costa $O(R \cdot m)$ per nodo,
+  $h_{\min}$ è una lettura di tabella. A $n = 10$: 2.3 s per caso con $h_{\text{libero}}$,
+  1.4 s con $h_{\min}$, 2.7 s con LcFS.
+- La deviazione standard supera la media: la difficoltà dipende soprattutto da quanti ruoli competono
+  per gli stessi mezzi scarsi (autoscale, NBCR), cioè dallo scenario più che dall'algoritmo.
+- In media restano scoperti tra 0.6 e 1.8 ruoli per scenario: la flotta casuale non sempre ha il tipo di mezzo richiesto.
+- Rispetto alla formulazione precedente (un mezzo per incidente, stato = insieme di assegnazioni) lo spazio è
+  molto più piccolo a parità di $n$, grazie allo stato compresso e all'ordine MRV.
 
 ---
 
 ## 6. Limiti
 
-- $C = \max(T, 1)$ altera il costo quando un mezzo è nella stessa cella dell'incidente (§2.2).
-- La griglia è uniforme, senza velocità diverse per tipo di strada: il costo è il numero di passi.
-- Il rilassamento ignora la competizione tra incidenti per lo stesso mezzo, che è la parte difficile del problema.
-  Per questo il vantaggio di A* è moderato per $n$ piccolo.
-- Il numero di scenari (20 per dimensione) è quello di `config.py`. Con più scenari le deviazioni standard si stimano meglio.
-- $h_{\min}$ e $h_{\text{libero}}$ sono consistenti sotto l'ipotesi che i costi $C(m,i)$ siano statici.
-  Se in futuro i costi dipenderanno dallo stato (ad esempio dal traffico), le dimostrazioni di §2.3–2.4 vanno riviste.
+- $C = \max(T, 1)$ altera il costo quando un mezzo è nella stessa cella dell'incidente (§2.3).
+- La penalità $P$ è un parametro: con $P$ più basso la ricerca lascerebbe scoperti ruoli costosi da raggiungere.
+- La griglia è uniforme, senza velocità diverse per tipo di strada.
+- Il rilassamento ignora la competizione tra ruoli residui per lo stesso mezzo, che è la parte difficile.
+- Le euristiche sono consistenti sotto l'ipotesi di costi statici.
 
 ---
 
@@ -244,3 +236,4 @@ dell'algoritmo. I tempi restano sotto i 0.02 secondi per caso.
 - LcFS: §2.5.4. A*: §2.6.3. Euristica e problema semplificato: §2.6.1, §2.6.5.
 - Ammissibilità e consistenza: §2.6.2–2.6.3. Proposizioni 2.1 (condizioni di A*) e 2.2 (consistenza e MPP).
 - Potatura dei cammini multipli: §2.7.2. Confronto delle complessità: Tabella 2.1.
+- Ordine delle variabili (MRV) e ricerca su assegnazioni parziali: capitolo sui CSP.

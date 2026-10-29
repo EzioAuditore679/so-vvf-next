@@ -5,7 +5,7 @@ numpy>=1.26
 pandas>=2.2
 
 # Machine learning e valutazione
-scikit-learn>=1.5
+scikit-learn>=1.7  # KBinsDiscretizer con quantile_method
 joblib>=1.4
 
 # Rete bayesiana

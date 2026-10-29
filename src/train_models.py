@@ -1,8 +1,10 @@
-"""Classificazione della gravità con nested cross-validation (esperimenti A e B).
+"""Classificazione della gravità con nested cross-validation.
 
 Esperimento A: i campi estratti dal testo dall'adattatore NLP.
 Esperimento B: A, più i fatti del registro (vulnerabilità, edifici adiacenti) e la
-probabilità di gravità critica della rete bayesiana (binned).
+probabilità di gravità critica della rete bayesiana, discretizzata in fasce a quantili.
+Rete: la rete bayesiana usata come classificatore, con la stessa evidenza di B tranne gli adiacenti.
+Controlli: C = B senza la rete; oracolo = C con la velocità vera del fuoco.
 
 La regola di gravità non entra mai nelle feature (target leakage). La rete bayesiana
 per i dati di addestramento è stimata fuori fold, così la feature non contiene l'etichetta.
@@ -27,7 +29,7 @@ from sklearn.metrics import accuracy_score, f1_score  # noqa: E402
 from sklearn.model_selection import GridSearchCV, StratifiedKFold  # noqa: E402
 from sklearn.naive_bayes import MultinomialNB  # noqa: E402
 from sklearn.pipeline import Pipeline  # noqa: E402
-from sklearn.preprocessing import OneHotEncoder  # noqa: E402
+from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder  # noqa: E402
 
 import bayes_engine as be  # noqa: E402
 import config  # noqa: E402
@@ -35,7 +37,7 @@ from nlp_extract import estrai_campi  # noqa: E402
 
 CAMPI_TESTO = ["tipo_edificio", "piano", "sostanze_pericolose", "persone", "meteo"]
 CAMPI_REGISTRO = ["vulnerabilita", "adiacenti"]
-BIN_PROB = [0.1, 0.2, 0.4, 0.6]  # estremi interni delle classi di P(critico)
+N_FASCE_PROB = 5  # fasce a quantili di P(critico), calcolate sul fold di addestramento
 
 
 def campi_estratti(testo: pd.Series) -> pd.DataFrame:
@@ -59,8 +61,16 @@ def modelli(seme: int) -> dict:
 
 
 def _pipeline(stimatore, colonne: list) -> Pipeline:
-    pre = ColumnTransformer([("cat", OneHotEncoder(handle_unknown="ignore"), colonne)])
-    return Pipeline([("pre", pre), ("clf", stimatore)])
+    """One-hot sulle colonne categoriali; P(critico), se presente, discretizzata a quantili.
+
+    Le fasce a quantili evitano soglie scelte a mano e danno a naive Bayes multinomiale
+    feature non negative come agli altri modelli.
+    """
+    parti = [("cat", OneHotEncoder(handle_unknown="ignore"), [c for c in colonne if c != "p_critico"])]
+    if "p_critico" in colonne:
+        parti.append(("prob", KBinsDiscretizer(N_FASCE_PROB, encode="onehot", strategy="quantile",
+                                               quantile_method="averaged_inverted_cdf"), ["p_critico"]))
+    return Pipeline([("pre", ColumnTransformer(parti)), ("clf", stimatore)])
 
 
 def _fold_esterni(y: np.ndarray, seme: int):
@@ -72,7 +82,7 @@ def _valuta(esperimento: str, X: pd.DataFrame, y: np.ndarray, colonne: list,
     """Nested CV: esterna per la stima, interna per gli iperparametri (scoring macro F1).
 
     probabilita: per ogni fold esterno, (p_tr, p_te) della rete bayesiana. Se presente,
-    la probabilità binned diventa una feature categoriale 'p_bin'.
+    diventa la feature 'p_critico', discretizzata dentro la pipeline.
     """
     righe = []
     for fold, (tr, te) in enumerate(_fold_esterni(y, seme)):
@@ -80,8 +90,8 @@ def _valuta(esperimento: str, X: pd.DataFrame, y: np.ndarray, colonne: list,
         y_tr, y_te = y[tr], y[te]
         if probabilita is not None:
             p_tr, p_te = probabilita[fold]
-            X_tr["p_bin"] = np.digitize(p_tr, BIN_PROB).astype(str)
-            X_te["p_bin"] = np.digitize(p_te, BIN_PROB).astype(str)
+            X_tr["p_critico"] = p_tr
+            X_te["p_critico"] = p_te
         for nome, (stimatore, griglia) in modelli(seme).items():
             pipe = _pipeline(stimatore, list(X_tr.columns))
             if griglia:
@@ -110,18 +120,30 @@ def esegui(df: pd.DataFrame, seme: int = config.SEME) -> list[dict]:
     # Esperimento A: solo i campi del testo.
     righe = _valuta("A", evidenza, y, CAMPI_TESTO, None, seme)
 
-    # Esperimento B: A, più registro, più P(critico) della rete. La rete per le righe di
-    # addestramento è stimata fuori fold; per le righe di test, sul solo fold di addestramento.
+    # Esperimento B: A, più registro, più P(critico) della rete, con la vulnerabilità come evidenza.
+    # Per ogni fold esterno alpha di Laplace è scelto in CV interna; la rete per le righe di
+    # addestramento è stimata fuori fold, per le righe di test sul solo fold di addestramento.
     X_b = evidenza.copy()
     for col in CAMPI_REGISTRO:
         X_b[col] = df[col].astype(str).values
-    probabilita = []
-    for tr, te in _fold_esterni(y, seme):
-        p_tr = be.p_critico_fuori_fold(df.iloc[tr], evidenza.iloc[tr], seme=seme)
-        rete = be.stima(df.iloc[tr])
-        p_te = be.p_critico_righe(rete, evidenza.iloc[te])
-        probabilita.append((p_tr, p_te))
+    ev_rete = evidenza.copy()
+    ev_rete["vulnerabilita"] = df["vulnerabilita"].astype(str).values
+    colonne_rete = be.OSSERVATE_CON_REGISTRO
+    probabilita, righe_rete = [], []
+    for fold, (tr, te) in enumerate(_fold_esterni(y, seme)):
+        alpha = be.scegli_alpha(df.iloc[tr], ev_rete.iloc[tr], colonne_rete, seme=seme)
+        p_tr = be.p_critico_fuori_fold(df.iloc[tr], ev_rete.iloc[tr], seme=seme,
+                                       colonne=colonne_rete, alpha=alpha)
+        rete = be.stima(df.iloc[tr], alpha)
+        probabilita.append((p_tr, be.p_critico_righe(rete, ev_rete.iloc[te], colonne_rete)))
+        pred = be.gravita_piu_probabile(rete, ev_rete.iloc[te], colonne_rete)
+        righe_rete.append(dict(
+            esperimento="rete", modello="rete_bayesiana", fold=fold,
+            accuracy=accuracy_score(y[te], pred), f1_macro=f1_score(y[te], pred, average="macro"),
+            parametri=str({"alpha": alpha}),
+        ))
     righe.extend(_valuta("B", X_b, y, CAMPI_TESTO + CAMPI_REGISTRO, probabilita, seme))
+    righe.extend(righe_rete)
 
     # Controlli, non realizzabili in pratica. C: come B senza la rete, isola il contributo della rete.
     # Oracolo: come C con la velocità vera del fuoco, misura quanto pesa la variabile nascosta.

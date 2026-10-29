@@ -29,6 +29,11 @@ DISTANZA_ADIACENZA = 3  # due incidenti a distanza di Manhattan <= 3 sono adiace
 N_SCENARI_PER_DIMENSIONE = 20  # si riportano media ± deviazione standard
 LIMITE_NODI = 500_000  # oltre questo numero di nodi il caso è segnato come non completato
 
+# Valutazione end-to-end delle fonti di gravità sul dispatch (src/valutazione_dispatch.py).
+N_INCIDENTI_E2E = 5
+N_SCENARI_E2E = 100
+SEME_E2E = SEME + 1000  # scenari indipendenti dal dataset di addestramento
+
 # Percorsi
 DATA_DIR = ROOT / "data"
 KB_DIR = ROOT / "knowledge_base"

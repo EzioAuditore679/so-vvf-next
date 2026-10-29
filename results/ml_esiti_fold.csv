@@ -20,25 +20,30 @@ A,regressione_logistica,4,0.725,0.6942580776600717,{'clf__C': 10}
 A,random_forest,4,0.715,0.6971088909973767,{'clf__max_depth': 6}
 A,naive_bayes,4,0.71,0.6726607894209576,{'clf__alpha': 0.1}
 B,baseline_maggioranza,0,0.47,0.21315192743764175,{}
-B,regressione_logistica,0,0.735,0.6755698005698005,{'clf__C': 10}
-B,random_forest,0,0.71,0.6744732712277539,{'clf__max_depth': 6}
-B,naive_bayes,0,0.695,0.6699730257864965,{'clf__alpha': 1}
+B,regressione_logistica,0,0.74,0.686979686979687,{'clf__C': 1}
+B,random_forest,0,0.725,0.7011826182618263,{'clf__max_depth': 6}
+B,naive_bayes,0,0.7,0.6809663841319264,{'clf__alpha': 10}
 B,baseline_maggioranza,1,0.47,0.21315192743764175,{}
-B,regressione_logistica,1,0.75,0.7293954707377205,{'clf__C': 10}
-B,random_forest,1,0.715,0.7086241718597833,{'clf__max_depth': 6}
-B,naive_bayes,1,0.755,0.7391971633457701,{'clf__alpha': 0.1}
+B,regressione_logistica,1,0.75,0.726666068168896,{'clf__C': 10}
+B,random_forest,1,0.745,0.7325600032055135,{'clf__max_depth': 6}
+B,naive_bayes,1,0.71,0.6911063450298863,{'clf__alpha': 10}
 B,baseline_maggioranza,2,0.465,0.21160409556313994,{}
-B,regressione_logistica,2,0.735,0.6918752516726806,{'clf__C': 1}
-B,random_forest,2,0.695,0.6564641430975876,{'clf__max_depth': 6}
-B,naive_bayes,2,0.67,0.6233333333333334,{'clf__alpha': 0.1}
+B,regressione_logistica,2,0.745,0.7157400482007811,{'clf__C': 10}
+B,random_forest,2,0.66,0.6179839208410637,{'clf__max_depth': 3}
+B,naive_bayes,2,0.67,0.6603791291291291,{'clf__alpha': 10}
 B,baseline_maggioranza,3,0.465,0.21160409556313994,{}
-B,regressione_logistica,3,0.74,0.680672709369934,{'clf__C': 10}
-B,random_forest,3,0.74,0.6849282117982307,{'clf__max_depth': 6}
-B,naive_bayes,3,0.73,0.6825544756579239,{'clf__alpha': 0.1}
+B,regressione_logistica,3,0.745,0.6872973088606512,{'clf__C': 1}
+B,random_forest,3,0.745,0.7103392639106926,{'clf__max_depth': 6}
+B,naive_bayes,3,0.75,0.7279569892473118,{'clf__alpha': 10}
 B,baseline_maggioranza,4,0.465,0.21160409556313994,{}
-B,regressione_logistica,4,0.75,0.7227925389157273,{'clf__C': 10}
-B,random_forest,4,0.74,0.6996305768684286,{'clf__max_depth': 6}
-B,naive_bayes,4,0.745,0.7202923976608187,{'clf__alpha': 0.1}
+B,regressione_logistica,4,0.78,0.7670898531288907,{'clf__C': 1}
+B,random_forest,4,0.75,0.7249207628256782,{'clf__max_depth': 6}
+B,naive_bayes,4,0.775,0.7504861070602189,{'clf__alpha': 10}
+rete,rete_bayesiana,0,0.745,0.717042537587092,{'alpha': 0.1}
+rete,rete_bayesiana,1,0.685,0.6828159383912266,{'alpha': 10.0}
+rete,rete_bayesiana,2,0.675,0.6552900479960274,{'alpha': 10.0}
+rete,rete_bayesiana,3,0.76,0.7287914125477576,{'alpha': 0.1}
+rete,rete_bayesiana,4,0.735,0.7098802968368186,{'alpha': 0.1}
 C,baseline_maggioranza,0,0.47,0.21315192743764175,{}
 C,regressione_logistica,0,0.725,0.6604516647728792,{'clf__C': 1}
 C,random_forest,0,0.695,0.6509898831327403,{'clf__max_depth': 6}
