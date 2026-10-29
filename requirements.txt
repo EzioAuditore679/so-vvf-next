@@ -9,7 +9,8 @@ scikit-learn>=1.5
 joblib>=1.4
 
 # Rete bayesiana
-pgmpy>=0.1.26
+# DiscreteBayesianNetwork richiede pgmpy 1.x; BayesianEstimator è rimosso in 1.3
+pgmpy>=1.0,<1.3
 
 # Prolog (wrapper per SWI-Prolog): knowledge base relazionale
 pyswip>=0.2.10

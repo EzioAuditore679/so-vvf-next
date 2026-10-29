@@ -14,6 +14,11 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import warnings  # noqa: E402
 
+# pgmpy 1.1 segnala come deprecate BayesianEstimator e StructureScore (rimossi in 1.3, vedi
+# requirements.txt). Il filtro va impostato prima dell'import e sul testo del messaggio,
+# perché il warning è attribuito al modulo chiamante, non a pgmpy.
+warnings.filterwarnings("ignore", category=FutureWarning, message=r".*pgmpy\..*")
+
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 from pgmpy.estimators import BayesianEstimator  # noqa: E402
@@ -21,7 +26,6 @@ from pgmpy.inference import VariableElimination  # noqa: E402
 from pgmpy.models import DiscreteBayesianNetwork  # noqa: E402
 from sklearn.model_selection import StratifiedKFold  # noqa: E402
 
-warnings.filterwarnings("ignore", category=FutureWarning, module="pgmpy")
 
 import config  # noqa: E402
 from domain import (  # noqa: E402
