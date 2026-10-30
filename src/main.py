@@ -7,7 +7,7 @@
 
 La demo percorre l'intera catena: testo della chiamata → campi (NLP) → gravità stimata da ML, rete
 bayesiana e rete + regola della KB → squadra richiesta con le spiegazioni Prolog → assegnazione dei mezzi
-(CSP, branch and bound) → percorsi (BFS, LcFS, A*) → verifica di integrità della proposta. Il dispatch usa la gravità della fonte rete + KB, che nella
+(simulated annealing) → percorsi (BFS, LcFS, A*) → verifica di integrità della proposta. Il dispatch usa la gravità della fonte rete + KB, che nella
 valutazione end-to-end manca meno incidenti critici (results/dispatch_e2e_riepilogo.csv).
 """
 
@@ -62,7 +62,7 @@ def _mappa_demo():
 
 def demo() -> None:
     import bayes_engine as be
-    import dispatch as dp
+    import assegnazioni as asg
     import ricerca
     import valutazione_dispatch as vd
     from domain import TipoMezzo
@@ -94,13 +94,13 @@ def demo() -> None:
 
     kb = KnowledgeBase()
     mappa = _mappa_demo()
-    caso = dp.Caso(mappa, {m: (TipoMezzo(t), cella) for m, (t, cella) in FLOTTA.items()},
+    caso = asg.Caso(mappa, {m: (TipoMezzo(t), cella) for m, (t, cella) in FLOTTA.items()},
                   {c["id"]: (None, c["cella"]) for c in CHIAMATE})
     incidenti = [dict(id=i, tipo=campi[i]["tipo_edificio"], piano=campi[i]["piano"] or 0,
                       sostanze=campi[i]["sostanze_pericolose"], persone=campi[i]["persone"],
                       meteo=campi[i]["meteo"]) for i in ids]
     registro = {c["id"]: (c["vulnerabilita"], c["adiacenti"]) for c in CHIAMATE}
-    adiacenze = dp.adiacenze_caso(caso)
+    adiacenze = asg.adiacenze(caso)
     mezzi = {m: t for m, (t, _) in FLOTTA.items()}
 
     def carica(velocita):
@@ -130,16 +130,14 @@ def demo() -> None:
             adatti[(i, ruolo)] = kb.mezzi_adatti(i, ruolo)
             print(f"  {i} {ruolo:16s} perché {motivo:32s} mezzi adatti: {', '.join(adatti[(i, ruolo)]) or '-'}")
 
-    print("\n4. Assegnazione dei mezzi: CSP con branch and bound")
-    sc = dp.scenario_da_adatti(adatti, tuple(FLOTTA), dp.costi_caso(caso))
-    soluzione = dp.risolvi(sc)
-    senza_stima = dp.risolvi(sc, usa_stima=False)
+    print("\n4. Assegnazione dei mezzi: simulated annealing con ripartenze casuali")
+    p = asg.problema(adatti, asg.tempi(caso))
+    soluzione = asg.risolvi(p)
     for m, i, ruolo in sorted(soluzione.assegnazioni, key=lambda a: (a[1], a[2])):
-        print(f"  {m:6s} ({FLOTTA[m][0]:12s}) → {i} {ruolo:16s} tempo {sc.costo[(m, i)]}")
+        print(f"  {m:6s} ({FLOTTA[m][0]:12s}) → {i} {ruolo:16s} tempo {p.tempo[(m, i)]:g}")
     for i, ruolo in soluzione.scoperti:
-        print(f"  ruolo scoperto: {i} {ruolo} → richiesta di rinforzi (penalità {sc.penalita})")
-    print(f"  Costo totale {soluzione.costo}; nodi visitati: con stima {soluzione.nodi}, "
-          f"senza stima {senza_stima.nodi} (stesso costo: {senza_stima.costo == soluzione.costo})")
+        print(f"  ruolo scoperto: {i} {ruolo} → richiesta di rinforzi (penalità {p.penalita})")
+    print(f"  Costo totale {soluzione.costo:g}; ottimo esatto {asg.ottimo_esatto(p):g}")
 
     print("\n5. Percorsi dei mezzi assegnati: nodi espansi da ogni algoritmo")
     print(f"  {'mezzo':6s} {'incidente':9s} {'tempo':>5s} {'BFS':>14s} {'LcFS':>6s} {'A* Manhattan':>13s} {'A* PD':>6s}")
@@ -151,7 +149,7 @@ def demo() -> None:
         e = {nome: ricerca.a_star(partenza, obiettivo, mappa.successori, h).espansi
              for nome, h in [("LcFS", lambda c: 0), ("M", ricerca.h_manhattan(arrivo)), ("PD", ricerca.h_pd(tabella))]}
         bfs_testo = f"{b.espansi} (tempo {b.costo:g})"
-        print(f"  {m:6s} {i:9s} {sc.costo[(m, i)]:>5g} {bfs_testo:>14s} {e['LcFS']:>6} {e['M']:>13} {e['PD']:>6}")
+        print(f"  {m:6s} {i:9s} {p.tempo[(m, i)]:>5g} {bfs_testo:>14s} {e['LcFS']:>6} {e['M']:>13} {e['PD']:>6}")
     print(f"  La tabella della PD costa {espansi_pd} nodi per incidente (sulla mappa senza chiusure) "
           f"ed è riusata da tutti i mezzi diretti a quell'incidente.")
 
@@ -170,7 +168,7 @@ def esperimenti(sensibilita: bool = True) -> None:
     _esegui("src/generate_dataset.py")
     _esegui("-m", "pytest", "-q", "tests")
     _esegui("src/ricerca.py")
-    _esegui("src/dispatch.py")
+    _esegui("src/assegnazioni.py")
     _esegui("src/train_models.py")
     if sensibilita:
         _esegui("src/sensitivita.py")

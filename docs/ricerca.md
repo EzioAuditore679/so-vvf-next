@@ -1,14 +1,15 @@
 # Ricerca e assegnazione dei mezzi
 
-Documento di riferimento per `src/ricerca.py`, `src/dispatch.py` e per i test `tests/test_ricerca.py` e
-`tests/test_dispatch.py`. I rimandi (§) sono al capitolo "Ricerca in Spazi di Stati" delle dispense del corso.
+Documento di riferimento per `src/ricerca.py`, `src/assegnazioni.py` e per i test `tests/test_ricerca.py` e
+`tests/test_assegnazioni.py`. I rimandi (§) sono ai capitoli "Ricerca in Spazi di Stati" (§2) e
+"Ragionamento con Vincoli" (§3) delle dispense del corso.
 
 Il dispatch si divide in due problemi, ciascuno in un proprio modulo:
 
 | Modulo | Problema | Tecnica | Cosa si confronta |
 |---|---|---|---|
 | `ricerca.py` | percorso del mezzo dalla stazione all'incidente | ricerca su grafo | BFS, LcFS, A* con due euristiche, una costruita con la programmazione dinamica |
-| `dispatch.py` | quale mezzo copre quale ruolo della squadra | CSP risolto con branch and bound | branch and bound con e senza stima |
+| `assegnazioni.py` | quale mezzo copre quale ruolo della squadra | ottimizzazione vincolata con simulated annealing | distanza dall'ottimo esatto, con un tentativo e con ripartenze |
 
 I ruoli della squadra e i mezzi adatti a ciascun ruolo vengono dalla KB Prolog (`ruolo/2`, `copre/3`).
 I tempi di percorrenza che l'assegnazione minimizza vengono da `ricerca.py`.
@@ -91,7 +92,7 @@ quando le celle costano tutte 1.
 
 ---
 
-## 2. Assegnazione dei mezzi come CSP
+## 2. Assegnazione dei mezzi: ottimizzazione vincolata
 
 ### 2.1 Formulazione
 
@@ -99,47 +100,61 @@ quando le celle costano tutte 1.
 |---|---|
 | Variabili | i ruoli richiesti dagli incidenti (estinzione, rinforzo, soccorso in quota, decontaminazione) |
 | Domini | i mezzi adatti al ruolo secondo la KB e raggiungibili, più il valore *scoperto* |
-| Vincolo | un mezzo copre al più un ruolo |
-| Obiettivo | minimizzare la somma dei tempi di percorrenza, più $P$ per ogni ruolo scoperto |
+| Vincolo rigido | un mezzo copre al più un ruolo |
+| Funzione obiettivo | somma dei tempi di percorrenza, più $P$ per ogni ruolo scoperto |
 
-*Scoperto* significa chiedere un rinforzo a un comando vicino, al costo $P$ = `config.PENALITA_RUOLO_SCOPERTO` = 120.
-Il valore supera il tempo di percorrenza più lungo osservato sulla mappa 30×30 (86), quindi un ruolo resta
-scoperto solo se non c'è un mezzo adatto libero. Grazie a questo valore ogni scenario ha una soluzione.
+È un problema di ottimizzazione vincolato (§3.10). *Scoperto* significa chiedere un rinforzo a un comando vicino,
+al costo $P$ = `config.PENALITA_RUOLO_SCOPERTO` = 120. Il valore supera il tempo di percorrenza più lungo osservato
+sulla mappa 30×30 (86), quindi un ruolo resta scoperto solo se non c'è un mezzo adatto libero.
 
-### 2.2 Branch and bound in profondità
+Come suggerito in §3.10, il vincolo rigido diventa un costo alto ma finito: ogni volta che un mezzo è usato
+più di una volta si aggiunge $C$ = `config.COSTO_CONFLITTO` = $P + 1$. Con $C > P$ un conflitto si risolve sempre
+lasciando scoperto uno dei due ruoli, con un guadagno; con $C$ finito e vicino a $P$ la ricerca può attraversare
+assegnazioni con un conflitto, ad esempio per scambiare due mezzi tra due ruoli. Si restituisce comunque la
+migliore assegnazione **senza** conflitti visitata. Un primo tentativo con $C$ maggiore della somma di tutti gli
+altri costi (la variante rigida di §3.10) rendeva gli scambi quasi impossibili a bassa temperatura e lasciava
+soluzioni peggiori.
 
-Si usa il branch and bound di §2.6.4 sulle assegnazioni parziali, con tre tecniche dei CSP:
+### 2.2 Simulated annealing con ripartenze casuali
 
-- **ordine delle variabili MRV**: si decide prima il ruolo con meno valori ancora ammessi; a parità, quello con il
-  rimpianto più alto (differenza tra secondo e primo valore), cioè quello per cui sbagliare costa di più;
-- **ordine dei valori**: dal mezzo più vicino, così la prima soluzione completa è già buona e alza subito il limite;
-- **domini aggiornati** a ogni assegnazione (forward checking): i mezzi usati escono dai domini degli altri ruoli.
-  Nessun dominio si svuota mai, perché *scoperto* resta sempre ammesso: l'aggiornamento serve a MRV e alla stima.
+Si usa la ricerca locale per l'ottimizzazione (§3.10.2) nella forma del simulated annealing (§3.7):
 
-Un ramo si pota quando costo già speso + stima ≥ costo della migliore soluzione trovata. Il riferimento non
-informato è lo stesso algoritmo con stima nulla, che pota solo con il costo già speso: è il ruolo che LcFS ha per A*.
+- **assegnazione iniziale casuale**, un valore del dominio per ogni ruolo;
+- **successore**: si cambia il valore di un solo ruolo, scelti a caso il ruolo e il nuovo valore;
+- **accettazione**: il passo si accetta se non peggiora il costo, altrimenti con probabilità $e^{-(h(A') - h(A))/T}$;
+- **raffreddamento geometrico** da $T_0$ a $T_f$ in un numero fisso di passi;
+- **ripartenze casuali** (§3.7): più tentativi indipendenti, si tiene il migliore.
 
-### 2.3 La stima: rilassamenti del vincolo di esclusività
+Poiché un passo cambia un solo ruolo, la variazione di costo si calcola guardando solo i due mezzi coinvolti
+(quello lasciato e quello preso), senza ricalcolare tutta l'assegnazione.
 
-Il branch and bound richiede solo che la stima non superi il costo minimo dei ruoli residui. Si parte da
-**h_libero**: ogni ruolo residuo prende il suo valore più economico tra mezzi liberi e penalità, anche se un altro
-ruolo vuole lo stesso mezzo (si toglie l'esclusività tra i ruoli residui). A questa base si aggiungono due
-correzioni, ciascuna ammissibile, applicate a gruppi di ruoli disgiunti:
+La ricerca locale è incompleta: non garantisce l'ottimo. Per misurare quanto se ne allontana si usa come
+riferimento l'ottimo esatto: con questi vincoli il problema è un assegnamento, risolvibile in tempo polinomiale
+con l'algoritmo ungherese (`ottimo_esatto`, tramite scipy). L'ottimo esatto serve solo alla valutazione e ai test;
+la formulazione come ottimizzazione vincolata resta utile perché accetta vincoli che rompono la struttura di
+assegnamento, ad esempio mezzi incompatibili sullo stesso incidente o un tempo massimo per i ruoli critici.
 
-- **capacità**: se $k$ ruoli possono usare solo un gruppo di $d$ mezzi e $k > d$, in ogni soluzione almeno $k - d$
-  di loro restano scoperti e pagano $P$ invece del loro minimo. Si aggiungono gli aumenti più piccoli: è il minimo
-  possibile.
-- **mezzi contesi**: se più ruoli hanno come prima scelta lo stesso mezzo, uno solo può averlo; gli altri pagano almeno
-  il loro secondo valore. Si lascia il mezzo al ruolo per cui perderlo costerebbe di più, quindi l'aumento è il minimo possibile.
+### 2.3 Scelta dei parametri
 
-Le due correzioni riguardano ruoli diversi, quindi le loro somme restano un limite inferiore.
-`test_stima_ammissibile_in_ogni_stato` lo verifica in 600 stati casuali contro l'ottimo esatto.
+Taratura su 32 scenari (4, 6, 8 e 10 incidenti) generati con un seme diverso da quello della valutazione
+(`config.SEME + 500`), un solo tentativo per scenario. Percentuale di soluzioni ottime e scarto medio dall'ottimo:
 
-**Nota sulla complessità.** Con questi vincoli l'assegnazione è un problema di assegnamento, risolvibile in tempo
-polinomiale con l'algoritmo ungherese. I test lo usano per verificare che il branch and bound trovi l'ottimo
-(`test_branch_and_bound_trova_l_ottimo`, 40 istanze). La formulazione CSP resta utile perché accetta vincoli che
-rompono la struttura di assegnamento, ad esempio mezzi incompatibili tra loro sullo stesso incidente o un tempo
-massimo di arrivo per i ruoli critici.
+| Passi | $T_0 = 30$ | $T_0 = 100$ | $T_0 = 300$ |
+|---|---|---|---|
+| 20 000 | 28% / 5.5% | 31% / 3.7% | 38% / 4.5% |
+| 50 000 | 44% / 2.8% | 53% / 1.6% | 47% / 2.6% |
+| 100 000 | 53% / 1.8% | 63% / 1.0% | 50% / 1.9% |
+
+- $T_0 = 100$ è il migliore per ogni numero di passi: a inizio ricerca un peggioramento di 10 minuti si accetta con
+  probabilità 0.9, uno pari alla penalità (120) con probabilità 0.3. $T_f = 0.1$: alla fine non si accettano quasi più peggioramenti.
+- **50 000 passi** per tentativo (circa 0.06 s): raddoppiarli migliora poco lo scarto (dall'1.6% all'1.0%) e
+  raddoppia il tempo; conviene spendere il tempo in **5 ripartenze**, che misurano anche quanto aiuta la ripartenza casuale.
+
+### 2.4 Verifica
+
+`tests/test_assegnazioni.py`: l'ottimo esatto coincide con l'enumerazione di tutte le assegnazioni su 20 istanze
+piccole; su 30 istanze casuali il simulated annealing restituisce sempre un'assegnazione ammissibile (mezzi distinti
+e adatti, ogni ruolo deciso una volta) e trova l'ottimo; un conflitto costa più di un ruolo scoperto.
 
 ---
 
@@ -154,10 +169,10 @@ massimo di arrivo per i ruoli critici.
 | Chiusure | 0%, 5%, 10%, 20% | da nessuna informazione nuova a molta: misura quanto la PD perde precisione |
 | Mappe | 30 per livello, 8 mezzi per mappa | 240 percorsi per livello; la tabella della PD è condivisa dagli 8 mezzi |
 | Assegnazione | 2–10 incidenti, 20 scenari ciascuno, 2.2 mezzi per incidente | un incidente richiede in media 1.6 ruoli |
-| Limite di nodi | 500 000 | oltre, il caso è registrato come non chiuso |
+| Simulated annealing | $T_0 = 100$, $T_f = 0.1$, 50 000 passi, 5 ripartenze | taratura in §2.3 |
 
-Esecuzione: `python src/ricerca.py` e `python src/dispatch.py`. Risultati in `results/ricerca_*.csv` e
-`results/dispatch_*.csv`, grafici `plots/ricerca_percorsi.png` e `plots/assegnazione_bb.png`.
+Esecuzione: `python src/ricerca.py` e `python src/assegnazioni.py`. Risultati in `results/ricerca_*.csv` e
+`results/assegnazioni_*.csv`, grafico `plots/ricerca_percorsi.png`.
 
 ### 3.2 Percorso del mezzo
 
@@ -184,21 +199,21 @@ LcFS e A* trovano sempre il percorso ottimo.
 
 ### 3.3 Assegnazione dei mezzi
 
-Nodi visitati dal branch and bound, media ± dev. std. su 20 scenari (casi chiusi entro 500 000 nodi):
+Simulated annealing confrontato con l'ottimo esatto, 20 scenari per dimensione (seme di valutazione):
 
-| Incidenti | Ruoli | Senza stima | Con stima |
-|---|---|---|---|
-| 2 | 2.8 | 16 ± 12 (20/20) | 9 ± 2 (20/20) |
-| 4 | 6.2 | 700 ± 1 623 (20/20) | 40 ± 37 (20/20) |
-| 6 | 9.8 | 102 227 ± 189 734 (17/20) | 1 237 ± 2 623 (20/20) |
-| 8 | 12.8 | 221 857 ± 185 172 (15/20) | 28 037 ± 111 250 (19/20) |
-| 10 | 16.2 | 445 713 ± 119 772 (4/20) | 39 964 ± 112 850 (19/20) |
+| Incidenti | Ruoli | 1 tentativo: ottimi | 1 tentativo: scarto | 5 tentativi: ottimi | 5 tentativi: scarto |
+|---|---|---|---|---|---|
+| 2 | 2.8 | 100% | 0 | 100% | 0 |
+| 4 | 6.2 | 100% | 0 | 100% | 0 |
+| 6 | 9.8 | 80% | 0.9% ± 2.2% | 100% | 0 |
+| 8 | 12.8 | 30% | 4.3% ± 6.4% | 55% | 1.3% ± 2.2% |
+| 10 | 16.2 | 15% | 3.5% ± 3.1% | 40% | 1.3% ± 1.6% |
 
-**Lettura.** La stima riduce i nodi di uno o due ordini di grandezza e chiude quasi tutti i casi. Con 8–10
-incidenti contemporanei resta un caso su 20 che supera il limite: sono scenari in cui molti ruoli si contendono
-mezzi a tempi quasi uguali, dove nessuna delle due correzioni della stima aiuta. La deviazione standard maggiore
-della media indica che la difficoltà dipende dallo scenario più che dalla dimensione.
-La valutazione end-to-end usa 5 incidenti per scenario, una dimensione in cui tutti i casi si chiudono.
+**Lettura.**
+- Fino a 6 incidenti contemporanei le 5 ripartenze trovano sempre l'ottimo; la valutazione end-to-end usa 5 incidenti.
+- Con 8–10 incidenti la soluzione resta in media l'1.3% sopra l'ottimo, cioè pochi minuti su tempi totali di
+  qualche centinaio. Le ripartenze dimezzano o più lo scarto di un singolo tentativo, come previsto da
+  $1 - (1 - p)^n$ (§3.7): se un tentativo trova l'ottimo con probabilità $p$, cinque lo trovano più spesso.
 
 ---
 
@@ -206,6 +221,6 @@ La valutazione end-to-end usa 5 incidenti per scenario, una dimensione in cui tu
 
 - La mappa è una griglia con quattro mosse e due soli costi per cella; le strade vere hanno velocità diverse e sensi unici.
 - La tabella della PD ignora le chiusure: con molte chiusure il suo vantaggio si riduce (§3.2).
-- Il branch and bound ha costo esponenziale nel caso peggiore; per istanze molto grandi l'assegnamento puro si risolve
-  in tempo polinomiale (§2.3), a meno di vincoli aggiuntivi.
+- Il simulated annealing non garantisce l'ottimo: con molti incidenti contemporanei resta qualche punto percentuale
+  sopra (§3.3). Senza vincoli aggiuntivi l'assegnamento si risolverebbe esattamente in tempo polinomiale (§2.2).
 - I tempi di percorrenza sono statici: un mezzo assegnato non cambia la mappa per gli altri.

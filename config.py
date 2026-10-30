@@ -24,7 +24,7 @@ N_MAPPE = 30             # mappe per livello di chiusure, un incidente ciascuna
 N_MEZZI_MAPPA = 8        # mezzi per incidente: la tabella della PD è riusata da tutti
 LIMITE_NODI = 500_000    # oltre questo numero di nodi la ricerca è segnata come non completata
 
-# Assegnazione dei mezzi come CSP (src/dispatch.py)
+# Assegnazione dei mezzi: ottimizzazione vincolata con simulated annealing (src/assegnazioni.py)
 N_INCIDENTI_SCENARI = [2, 4, 6, 8, 10]
 # Un incidente richiede in media 1.6 ruoli (misurato sul modello generativo).
 N_MEZZI_PER_INCIDENTE = 2.2  # mezzi disponibili = ceiling(incidenti * questo valore)
@@ -35,6 +35,14 @@ COMPOSIZIONE_FLOTTA = {"autopompa": 0.50, "nucleo_nbcr": 0.20, "canadair": 0.15,
 PENALITA_RUOLO_SCOPERTO = 120
 DISTANZA_ADIACENZA = 3  # due incidenti a distanza di Manhattan <= 3 sono adiacenti
 N_SCENARI_PER_DIMENSIONE = 20  # si riportano media ± deviazione standard
+# Costo di una violazione del vincolo "un mezzo per ruolo": appena sopra la penalità, così un conflitto
+# si risolve sempre lasciando scoperto uno dei due ruoli, ma resta attraversabile dalla ricerca locale.
+COSTO_CONFLITTO = PENALITA_RUOLO_SCOPERTO + 1
+# Simulated annealing: valori scelti con la taratura descritta in docs/ricerca.md §2.3 (seme SEME + 500).
+SA_PASSI = 50_000      # passi per tentativo
+SA_T_INIZIALE = 100.0  # a inizio ricerca un peggioramento di 10 minuti si accetta con probabilità 0.9
+SA_T_FINALE = 0.1      # a fine ricerca i peggioramenti non si accettano quasi più
+SA_RIPARTENZE = 5      # tentativi indipendenti, si tiene il migliore
 
 # Valutazione end-to-end delle fonti di gravità sul dispatch
 N_INCIDENTI_E2E = 5

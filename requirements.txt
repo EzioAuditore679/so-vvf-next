@@ -17,7 +17,7 @@ pyswip>=0.2.10
 # Grafici
 matplotlib>=3.9
 
-# Test: l'algoritmo ungherese verifica l'ottimo del branch and bound
+# Ottimo esatto dell'assegnazione (algoritmo ungherese), riferimento per il simulated annealing
 scipy>=1.11
 
 # Test

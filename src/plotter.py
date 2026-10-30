@@ -4,7 +4,6 @@
 
 - ml_modelli.png:      accuratezza, F1 macro e F1 pesata per esperimento e modello (media ± dev. std.)
 - ricerca_percorsi.png: nodi espansi da BFS, LcFS, A* Manhattan e A* PD; tempo in più della BFS
-- assegnazione_bb.png: nodi visitati dal branch and bound, con e senza stima
 - dispatch_fonti.png:  fonti della gravità valutate sul dispatch
 """
 
@@ -126,28 +125,6 @@ def grafico_percorsi() -> None:
     _salva(fig, "ricerca_percorsi.png")
 
 
-def grafico_assegnazione() -> None:
-    """Branch and bound per l'assegnazione dei mezzi: nodi visitati con e senza stima."""
-    dati = pd.read_csv(config.RESULTS_DIR / "dispatch_riepilogo.csv")
-    fig, ax = plt.subplots(figsize=(6.5, 4.2))
-    for algoritmo, colore in [("senza stima", BLU), ("con stima", VERDE)]:
-        d = dati[dati.algoritmo == algoritmo]
-        ax.plot(d.incidenti, d.nodi_media, marker="o", color=colore, linewidth=2, label=algoritmo)
-        for n, nodi, completi, casi in zip(d.incidenti, d.nodi_media, d.completi, d.casi):
-            if completi < casi:
-                ax.annotate(f"{completi}/{casi}", (n, nodi), xytext=(6, -10), textcoords="offset points",
-                            fontsize=8, color=colore)
-    ax.set_yscale("log")
-    ax.set_xticks(sorted(dati.incidenti.unique()))
-    ax.set_xlabel("incidenti per scenario")
-    ax.set_ylabel(f"nodi visitati (media su {config.N_SCENARI_PER_DIMENSIONE} scenari)")
-    ax.set_title(f"Assegnazione dei mezzi: branch and bound\n(x/y: casi chiusi entro {config.LIMITE_NODI:,} nodi)"
-                 .replace(",", " "))
-    ax.yaxis.grid(True, color=GRIGIO_CHIARO)
-    ax.legend(frameon=False)
-    _salva(fig, "assegnazione_bb.png")
-
-
 def grafico_dispatch() -> None:
     """Per ogni fonte della gravità: critici mancati (totale), sovrastimati e costo in più (media con IC 95%)."""
     scenari = pd.read_csv(config.RESULTS_DIR / "dispatch_e2e_scenari.csv")
@@ -191,7 +168,6 @@ def grafico_dispatch() -> None:
 def tutti() -> None:
     grafico_ml()
     grafico_percorsi()
-    grafico_assegnazione()
     grafico_dispatch()
     print(f"Grafici scritti in {config.PLOTS_DIR}")
 
