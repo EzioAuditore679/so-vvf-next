@@ -15,14 +15,14 @@ sys.path.insert(0, str(ROOT))
 
 import matplotlib
 
-matplotlib.use("Agg")  # nessuna finestra: le immagini vanno solo su file
+matplotlib.use("Agg") 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 import config
 
-# Palette categoriale validata per il daltonismo; un colore fisso per ogni modello o algoritmo.
+# Palette usata
 BLU, ARANCIO, VERDE, GIALLO = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
 GRIGIO, GRIGIO_CHIARO = "#52514e", "#e4e3df"
 
@@ -61,7 +61,6 @@ def grafico_ml() -> None:
     baseline = ml[ml.modello == "baseline_maggioranza"].iloc[0]
     ml = ml[ml.modello.isin(NOMI_MODELLI)]
 
-    # Posizioni sull'asse verticale: le righe di un esperimento sono vicine, tra esperimenti c'è spazio.
     righe, posizioni, etichette, y = [], [], [], 0
     for esperimento in ESPERIMENTI:
         for modello in NOMI_MODELLI:
