@@ -1,12 +1,11 @@
 """Estrazione dei campi di una chiamata dal solo testo, con regole e regex.
 
-Adattatore di ingresso, non oggetto di valutazione. Il lessico è definito qui e non
-riusa le frasi di PAROLE_CHIAVE: il generatore e l'estrattore non condividono le stesse
-espressioni. Il gold set è stato usato anche per analizzare gli errori, quindi il suo
-risultato non è completamente indipendente.
+Adattatore di ingresso, non oggetto di valutazione sperimentale: è verificato dai test in
+tests/test_nlp.py. Il lessico è definito qui e non riusa le frasi di PAROLE_CHIAVE: il generatore
+e l'estrattore non condividono le stesse espressioni, e i test usano anche sinonimi, negazioni
+e abbreviazioni che il generatore non produce.
 """
 
-import csv
 import re
 import sys
 from pathlib import Path
@@ -120,20 +119,3 @@ def estrai_campi(testo: str) -> dict:
         "meteo": _meteo(t),
     }
 
-
-if __name__ == "__main__":
-    # ATTENZIONE: numero ottimistico, le regole sono state scritte guardando testi dello stesso tipo.
-    # La valutazione vera si fa su gold/test in validate.py.
-    percorso = ROOT / "data" / "dataset_sintetico.csv"
-    campi = ["tipo_edificio", "piano", "sostanze_pericolose", "persone", "meteo"]
-    corretti = {c: 0 for c in campi}
-    righe = 0
-    with percorso.open(encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            righe += 1
-            pred = estrai_campi(r["testo"])
-            for c in campi:
-                if str(pred[c]) == str(r[c]) or (c == "piano" and int(r[c]) == pred[c]):
-                    corretti[c] += 1
-    for c in campi:
-        print(f"{c}: {corretti[c] / righe:.3f}")

@@ -83,5 +83,6 @@ di training è calcolata fuori fold (cross-fitting).
 4. **Rumore arbitrario.** Il valore 0.12 è una scelta. L'analisi di sensibilità su 0.05, 0.12 e 0.20
    mostra quanto il risultato dipende dal rumore.
 5. **Testo e campi osservabili.** Il testo è generato dai campi osservabili con template e
-   rumore del parlato: l'estrattore NLP lavora su testi che il generatore ha costruito, quindi i suoi
-   risultati sul dataset sintetico restano ottimistici (vedi `results/storico_estrattore.md`).
+   rumore del parlato. Su questi testi l'estrattore NLP ricava tutti i campi correttamente, quindi
+   nell'esperimento A i campi estratti coincidono con quelli veri: l'NLP non aggiunge rumore al ML.
+   I test in `tests/test_nlp.py` verificano l'estrattore anche su frasi diverse dai template.

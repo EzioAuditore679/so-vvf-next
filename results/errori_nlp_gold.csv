@@ -1,6 +1,0 @@
-id,campo,vero,predetto,testo
-g095,tipo_edificio,bosco,nessuno,Macchia mediterranea bruciata. Nessun rischio chimico nella zona. Nessuno è intrappolato. Tempo calmo.
-g053,sostanze_pericolose,si,no,Fabbrica al sesto piano. Stoccaggio di prodotti chimici. Non sappiamo se ci sia personale. Calmo.
-g090,sostanze_pericolose,no,si,Area boschiva in fiamme vicino al paese. Serbatoio di acqua antincendio. Non sappiamo se ci siano persone. Vento sostenuto.
-g023,persone,assenti,nessuno,"Casa al secondo piano, solventi nel seminterrato. Tutte le persone sono fuori. Vento sostenuto."
-g025,persone,incerte,confermate,"Abitazione al primo piano, nessuna sostanza pericolosa. Qualcuno potrebbe essere rimasto dentro. Vento forte da nord."

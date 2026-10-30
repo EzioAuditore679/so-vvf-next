@@ -15,7 +15,7 @@ La catena completa è: testo della chiamata → campi → gravità stimata → s
 ## Architettura
 
 1. **Dati** (`src/modello_generativo.py`, `src/generate_dataset.py`): un modello causale esplicito genera la situazione (tipo di edificio, piano, sostanze, meteo, velocità del fuoco, persone, vulnerabilità della zona, edifici adiacenti) e la gravità, con rumore dichiarato. Il testo della chiamata è generato solo dai campi osservabili. Dettagli in `docs/modello_generativo.md`.
-   `src/nlp_extract.py` è un **adattatore di ingresso** che ricava i campi dal testo; non è oggetto di valutazione nella relazione.
+   `src/nlp_extract.py` è un **adattatore di ingresso** che ricava i campi dal testo; non è oggetto di valutazione sperimentale ed è verificato da test automatici (`tests/test_nlp.py`).
 
 2. **Knowledge base Prolog** (`knowledge_base/kb.pl`, interrogata via `pyswip` da `src/prolog_engine.py`): ruoli della squadra derivati dalla gravità operativa e mezzi adatti a ogni ruolo, con negazione per fallimento (`\+`) per l'incompatibilità canadair–sostanze pericolose; spiegazioni dei ruoli (`motivo/3`); gravità stimata da una fonte esterna che prevale sulla regola; regola di gravità a tre livelli, identica a `regola_gravita` (verificata da test su 2000 casi); abduzione sulla velocità del fuoco (la variabile latente che spiega la gravità osservata); propagazione ricorsiva del pericolo tra edifici adiacenti, con lista dei visitati per evitare i cicli; vincoli di integrità sulle proposte di dispatch.
    - La KB è un solo file: in cima la conoscenza di dominio (punti e soglie della gravità, soglia dei piani per l'autoscala), poi le regole. I fatti di dominio coincidono con le costanti del generatore Python: lo verificano un test diretto sulle costanti e un test sulla gravità di 2000 casi.
@@ -45,7 +45,7 @@ La catena completa è: testo della chiamata → campi → gravità stimata → s
 - **Nessun reasoner OWL e nessun esportatore OWL.** La rappresentazione è relazionale in Prolog: le regole del dominio (squadra, propagazione, abduzione, integrità) richiedono ricorsione, negazione per fallimento e aritmetica, mentre una tassonomia di concetti non aggiungerebbe ragionamento utile al problema. La motivazione è nella relazione.
 - **CSP** formulato come assegnazione: variabili = ruoli richiesti dagli incidenti, domini = mezzi adatti forniti da Prolog più il valore *scoperto*, vincolo = esclusività del mezzo. È risolto dalla ricerca nello spazio degli stati, con ordine MRV delle variabili.
 - **Dati generati da un modello causale**, non da campionamento indipendente. Le probabilità sono assunzioni dichiarate, con analisi di sensibilità.
-- **NLP** limitato all'adattatore di ingresso. Le sue prove restano in `results/` come controllo di funzionamento.
+- **NLP** limitato all'adattatore di ingresso, verificato da test su sinonimi, negazioni, incertezza e abbreviazioni e su tutte le chiamate del generatore. Un solo dataset, come per gli altri componenti: niente insiemi di testi scritti a mano da valutare.
 - **Esclusi**: clustering (non utile, i dati sono già classificati) e reti neurali (fuori dal nucleo del programma).
 
 ## Vincoli delle linee guida
@@ -65,25 +65,22 @@ so-vvf-next/
 │   ├── modello_generativo.md  # grafo causale, probabilità, limiti
 │   └── ricerca.md             # rappresentazione, euristiche, dimostrazioni, risultati
 ├── data/
-│   ├── dataset_sintetico.csv  # generato da generate_dataset.py
-│   ├── dev_set.csv            # per tarare l'adattatore NLP
-│   ├── gold_set.csv           # contaminato: usato per analisi errori
-│   └── test_set.csv           # valutato una sola volta
+│   └── dataset_sintetico.csv  # generato da generate_dataset.py (seme 42)
 ├── knowledge_base/
 │   └── kb.pl                  # la KB: conoscenza di dominio e regole
-├── results/                   # metriche, errori, storico
-├── plots/                     # grafici generati da main.py
+├── results/                   # risultati in CSV
+├── plots/                     # grafici generati da plotter.py
 ├── tests/
 │   ├── test_prolog.py         # coerenza KB/regola Python, squadra, abduzione, ricorsione, integrità
 │   ├── test_search.py         # ammissibilità, consistenza, ottimalità delle euristiche
 │   ├── test_bayes.py          # CPT, Laplace, inferenza, recupero del generatore
+│   ├── test_nlp.py            # regole dell'adattatore NLP e lettura delle chiamate generate
 │   └── test_valutazione.py    # giudizio dei piani con la gravità vera
 └── src/
     ├── domain.py              # vocabolario unico del dominio
     ├── modello_generativo.py  # grafo causale e regola di gravità
     ├── generate_dataset.py    # generatore di chiamate e stato del mondo
     ├── nlp_extract.py         # adattatore di ingresso (regole e regex)
-    ├── validate.py            # controllo di integrità e metriche NLP
     ├── prolog_engine.py       # interfaccia pyswip verso kb.pl
     ├── bayes_engine.py        # rete bayesiana: stima, inferenza, cross-fitting
     ├── search.py              # ricerca su griglia e dispatch per ruoli: LcFS, A*
@@ -125,8 +122,7 @@ Grafici in `plots/`, prodotti da `src/plotter.py`: `ml_modelli.png` (accuratezza
 
 ```
 python src/generate_dataset.py
-python src/validate.py test
-python -m pytest tests/        # KB, ricerca, rete bayesiana, valutazione
+python -m pytest tests/        # KB, ricerca, rete bayesiana, adattatore NLP, valutazione
 python src/search.py           # confronto LcFS e A* sul dispatch
 python src/train_models.py     # nested CV
 python src/sensitivita.py      # analisi di sensibilità
@@ -136,7 +132,7 @@ python src/valutazione_dispatch.py  # fonti di gravità sul dispatch
 ## Stato di avanzamento
 
 - [x] Dominio, configurazione, modello generativo causale, generatore di dati
-- [x] Adattatore NLP con dev, gold e test set
+- [x] Adattatore NLP, verificato da test automatici
 - [x] Knowledge base Prolog, con test di coerenza con `regola_gravita` (`tests/test_prolog.py`)
 - [x] Rete bayesiana, con test
 - [x] Ricerca: distanze A* su griglia, dispatch per ruoli con LcFS e A* ($h_{\min}$ e $h_{\text{libero}}$), test e confronto
@@ -145,5 +141,3 @@ python src/valutazione_dispatch.py  # fonti di gravità sul dispatch
 - [x] Valutazione end-to-end delle fonti di gravità sul dispatch
 - [x] Pipeline principale, demo e grafici
 - [ ] Relazione
-
-Il gold set è contaminato dall'analisi degli errori. Il dettaglio è in `results/storico_estrattore.md`.
