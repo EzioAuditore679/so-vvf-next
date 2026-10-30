@@ -36,7 +36,7 @@ INF = math.inf
 SCOPERTO = None
 
 
-# --- Scenario ------------------------------------------------------------------------------------
+# --- Descrizione Scenario ----
 
 @dataclass
 class Caso:
@@ -111,7 +111,7 @@ def problema(adatti: dict, tempo: dict, penalita: float = config.PENALITA_RUOLO_
     return Problema(sorted(adatti), domini, tempo, penalita)
 
 
-# --- Funzione obiettivo --------------------------------------------------------------------------
+# --- Funzione obiettivo ---
 
 def conflitti(a: dict) -> int:
     """Violazioni del vincolo rigido: quante volte un mezzo è usato oltre la prima."""
@@ -133,8 +133,7 @@ def _soluzione(p: Problema, a: dict) -> Soluzione:
     )
 
 
-# --- Simulated annealing con ripartenze casuali --------------------------------------------------
-
+# --- Simulated annealing con ripartenze casuali ----
 def simulated_annealing(p: Problema, rng: random.Random, passi: int = config.SA_PASSI,
                         t_iniziale: float = config.SA_T_INIZIALE, t_finale: float = config.SA_T_FINALE) -> Soluzione:
     """Un tentativo: assegnazione iniziale casuale, poi passi locali con raffreddamento geometrico.
@@ -202,7 +201,7 @@ def ottimo_esatto(p: Problema) -> float:
     return float(c[righe, colonne].sum())
 
 
-# --- Esperimento ---------------------------------------------------------------------------------
+# --- Esperimento ---
 
 def valuta(kb, seme: int = config.SEME) -> list[dict]:
     """Distanza dall'ottimo del simulated annealing, con un tentativo e con le ripartenze."""

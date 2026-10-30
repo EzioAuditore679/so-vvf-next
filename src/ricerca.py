@@ -1,6 +1,6 @@
 """Ricerca nello spazio degli stati: il percorso di un mezzo sulla mappa, dalla stazione all'incidente.
 
-Confronto tra ricerca non informata e informata (dimostrazioni in docs/ricerca.md):
+Confronto tra ricerca non informata e informata:
 - BFS: frontiera FIFO, minimizza il numero di passi e non il tempo;
 - LcFS: frontiera ordinata per costo, ottimale, nessuna euristica;
 - A* con Manhattan: euristica dal problema semplificato senza ostacoli e senza celle lente;
@@ -42,7 +42,7 @@ class Risultato:
     completo: bool  # False se la ricerca ha superato config.LIMITE_NODI
 
 
-# --- Algoritmi generici --------------------------------------------------------------------------
+# --- Algoritmi ----
 
 def _cammino(padre: dict, s) -> tuple:
     cammino = []
@@ -108,8 +108,7 @@ def bfs(inizio, obiettivo: Callable, successori: Callable, limite: int = config.
     return Risultato(INF, None, espansi, True)
 
 
-# --- Mappa -------------------------------------------------------------------------------------
-
+# --- Mappa ---
 @dataclass(frozen=True)
 class Mappa:
     righe: int
@@ -152,7 +151,7 @@ def genera_mappa(rng: random.Random, p_chiusure: float = config.PROB_CHIUSURA) -
     return Mappa(righe, colonne, ostacoli, lente, chiusure)
 
 
-# --- Euristiche ----------------------------------------------------------------------------------
+# --- Euristiche ---
 
 def h_manhattan(obiettivo: Cella) -> Callable:
     """Problema semplificato: nessun ostacolo, nessuna chiusura, ogni cella costa 1 (il costo minimo).
@@ -188,7 +187,7 @@ def h_pd(tabella: dict) -> Callable:
     return lambda c: tabella.get(c, INF)
 
 
-# --- Interfaccia per il dispatch -----------------------------------------------------------------
+# --- Interfaccia per il dispatch ----
 
 def percorso(mappa: Mappa, partenza: Cella, arrivo: Cella, tabella: dict | None = None) -> Risultato:
     """Percorso ottimo sulla mappa reale con A* e h_PD. La tabella si calcola una volta per incidente."""
@@ -197,7 +196,7 @@ def percorso(mappa: Mappa, partenza: Cella, arrivo: Cella, tabella: dict | None 
     return a_star(partenza, lambda c: c == arrivo, mappa.successori, h_pd(tabella))
 
 
-# --- Esperimento ---------------------------------------------------------------------------------
+# --- Esperimento ---
 
 ALGORITMI = ["BFS", "LcFS", "A* Manhattan", "A* PD"]
 
