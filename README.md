@@ -8,9 +8,9 @@ Progetto d'esame di Ingegneria della Conoscenza (ICON), Università di Bari. Dat
 Dato un insieme di chiamate al 115 e una flotta di mezzi distribuiti sul territorio, decidere quali mezzi inviare a ciascun incidente:
 - la **gravità** della chiamata è stimata (ML, rete bayesiana, oppure rete + regola della KB), perché la velocità del fuoco non si osserva;
 - la **squadra richiesta** (estinzione, rinforzo, soccorso in quota, decontaminazione) è derivata dalla KB Prolog a partire dalla gravità operativa, che tiene conto della propagazione tra incidenti vicini;
-- i mezzi sono assegnati ai ruoli minimizzando il **tempo totale di percorrenza** su una griglia con ostacoli, con una penalità per i ruoli lasciati scoperti.
+- i mezzi sono assegnati ai ruoli (CSP) minimizzando il **tempo totale di percorrenza**, calcolato con la ricerca su una mappa con ostacoli, celle lente e strade chiuse, con una penalità per i ruoli lasciati scoperti.
 
-La catena completa è: testo della chiamata → campi → gravità stimata → squadra (KB) → dispatch (A*).
+La catena completa è: testo della chiamata → campi → gravità stimata → squadra (KB) → assegnazione (CSP) → percorsi (A*).
 
 ## Architettura
 
@@ -22,28 +22,28 @@ La catena completa è: testo della chiamata → campi → gravità stimata → s
    - Complessità di `kb.pl` misurata con `KnowledgeBase().complessita()`: 29 predicati, 37 regole con corpo, 52 clausole (di cui 9 fatti di dominio). La profondità della ricorsione di `collegato/2` è al massimo il numero di incidenti dello scenario.
    - I fatti di scenario (incidenti, mezzi, registro, velocità) vengono asseriti da Python per ogni scenario. Le regole restano fisse nel file.
 
-3. **Ricerca a due livelli** (`src/search.py`, dimostrazioni in `docs/ricerca.md`):
-   - **Livello 1, distanze**: sulla griglia $20 \times 20$ con ostacoli, A\* con euristica di Manhattan calcola la distanza tra ogni stazione e ogni incidente. Manhattan è la soluzione esatta del problema senza ostacoli, quindi ammissibile e consistente. Verificata contro le distanze esatte.
-   - **Livello 2, dispatch**: CSP risolto con la ricerca. Una variabile per ruolo richiesto, in ordine MRV; stato = (ruoli decisi, mezzi occupati); azione = un mezzo adatto e libero, costo $\max(T(m,i), 1)$ con $\varepsilon = 1$ (Proposizione 2.1), oppure ruolo scoperto con penalità fissa. Algoritmi: **LcFS** (ricerca a costo uniforme, non informata) contro **A\*** con due euristiche da problemi semplificati:
-     - $h_{\min}$: si rimuove l'esclusività dei mezzi; minimo statico per ruolo.
-     - $h_{\text{libero}}$: esclusi solo i mezzi già occupati.
-     - Entrambe ammissibili e consistenti (dimostrazioni nella documentazione). I risultati sono medie ± deviazione standard su 20 scenari per dimensione.
+3. **Ricerca del percorso** (`src/ricerca.py`, dimostrazioni in `docs/ricerca.md`): il percorso del mezzo su una mappa 30×30 con ostacoli permanenti, celle lente (costo 3) e chiusure temporanee note solo al momento della chiamata. Confronto tra **BFS**, **LcFS** (non informata) e **A\*** con due euristiche da problemi semplificati:
+   - **Manhattan**: problema senza ostacoli e a costo 1, soluzione in forma chiusa;
+   - **h_PD**: DB di pattern costruito con la **programmazione dinamica** (cost_to_goal con LcFS sul grafo inverso dall'incidente) sulla mappa senza chiusure; più informata di Manhattan, perfetta quando non ci sono chiusure.
+   - Entrambe ammissibili e consistenti perché sono costi esatti su un grafo con più archi; i test lo verificano su ogni cella e ogni arco. Risultati in media ± dev. std. su 240 percorsi per livello di chiusure, con il costo della PD e il suo ammortamento sui mezzi.
 
-4. **Rete bayesiana** (`src/bayes_engine.py`): 8 nodi: Tipo, Piano, Sostanze, Meteo, Velocità del fuoco, Persone, Vulnerabilità, Gravità. CPT stimate per massima verosimiglianza con pseudoconteggi di Laplace (alpha scelto in CV interna). La velocità del fuoco è latente. Usi: P(critico) come feature, classificatore della gravità, stima della velocità del fuoco da passare alla regola della KB.
+4. **Assegnazione dei mezzi come CSP** (`src/dispatch.py`): variabili = ruoli richiesti dalla KB, domini = mezzi adatti e raggiungibili più il valore *scoperto*, vincolo = un mezzo per ruolo, obiettivo = tempo totale dato da `ricerca.py`. **Branch and bound** in profondità con ordine MRV, domini aggiornati a ogni assegnazione e una stima ottenuta rilassando il vincolo di esclusività (capacità e mezzi contesi). L'ottimo è verificato nei test con l'algoritmo ungherese.
 
-5. **Machine learning** (`src/train_models.py`): classificazione della gravità a tre livelli con **nested cross-validation** (esterna per la stima, interna per la scelta degli iperparametri).
+5. **Rete bayesiana** (`src/bayes_engine.py`): 8 nodi: Tipo, Piano, Sostanze, Meteo, Velocità del fuoco, Persone, Vulnerabilità, Gravità. CPT stimate per massima verosimiglianza con pseudoconteggi di Laplace (alpha scelto in CV interna). La velocità del fuoco è latente. Usi: P(critico) come feature, classificatore della gravità, stima della velocità del fuoco da passare alla regola della KB.
+
+6. **Machine learning** (`src/train_models.py`): classificazione della gravità a tre livelli con **nested cross-validation** (esterna per la stima, interna per la scelta degli iperparametri).
    - Esperimento A: solo i campi osservabili dal testo.
    - Esperimento B: A + fatti del registro (vulnerabilità, adiacenti) + probabilità della rete bayesiana, con la vulnerabilità come evidenza.
    - Rete: la rete bayesiana come classificatore. Controlli: C = B senza rete; oracolo = C con la velocità vera.
    - Il punteggio della regola di gravità **non entra mai nelle feature** (target leakage).
 
-6. **Valutazione end-to-end** (`src/valutazione_dispatch.py`): su 100 scenari la squadra e il dispatch sono calcolati con la gravità di ogni fonte e giudicati con la gravità vera (ruoli scoperti, mezzi superflui, critici mancati, costo in più rispetto all'ottimo).
+7. **Valutazione end-to-end** (`src/valutazione_dispatch.py`): su 100 scenari la squadra e il dispatch sono calcolati con la gravità di ogni fonte e giudicati con la gravità vera (ruoli scoperti, mezzi superflui, critici mancati, costo in più rispetto all'ottimo).
 
 ## Decisioni di progetto
 
 - **Gravità a tre livelli** (critico, alto, basso), definita da una regola esplicita, scritta in Prolog.
 - **Nessun reasoner OWL e nessun esportatore OWL.** La rappresentazione è relazionale in Prolog: le regole del dominio (squadra, propagazione, abduzione, integrità) richiedono ricorsione, negazione per fallimento e aritmetica, mentre una tassonomia di concetti non aggiungerebbe ragionamento utile al problema. La motivazione è nella relazione.
-- **CSP** formulato come assegnazione: variabili = ruoli richiesti dagli incidenti, domini = mezzi adatti forniti da Prolog più il valore *scoperto*, vincolo = esclusività del mezzo. È risolto dalla ricerca nello spazio degli stati, con ordine MRV delle variabili.
+- **Ricerca e CSP in moduli separati**: il confronto tra ricerca non informata e informata, con l'euristica costruita dalla programmazione dinamica, è sul percorso del mezzo; l'assegnazione dei mezzi è un CSP con branch and bound.
 - **Dati generati da un modello causale**, non da campionamento indipendente. Le probabilità sono assunzioni dichiarate, con analisi di sensibilità.
 - **NLP** limitato all'adattatore di ingresso, verificato da test su sinonimi, negazioni, incertezza e abbreviazioni e su tutte le chiamate del generatore. Un solo dataset, come per gli altri componenti: niente insiemi di testi scritti a mano da valutare.
 - **Esclusi**: clustering (non utile, i dati sono già classificati) e reti neurali (fuori dal nucleo del programma).
@@ -72,7 +72,8 @@ so-vvf-next/
 ├── plots/                     # grafici generati da plotter.py
 ├── tests/
 │   ├── test_prolog.py         # coerenza KB/regola Python, squadra, abduzione, ricorsione, integrità
-│   ├── test_search.py         # ammissibilità, consistenza, ottimalità delle euristiche
+│   ├── test_ricerca.py        # euristiche ammissibili e consistenti, PD, ottimalità di LcFS e A*, BFS
+│   ├── test_dispatch.py       # branch and bound: ottimo verificato con l'algoritmo ungherese, stima ammissibile
 │   ├── test_bayes.py          # CPT, Laplace, inferenza, recupero del generatore
 │   ├── test_nlp.py            # regole dell'adattatore NLP e lettura delle chiamate generate
 │   └── test_valutazione.py    # giudizio dei piani con la gravità vera
@@ -83,7 +84,8 @@ so-vvf-next/
     ├── nlp_extract.py         # adattatore di ingresso (regole e regex)
     ├── prolog_engine.py       # interfaccia pyswip verso kb.pl
     ├── bayes_engine.py        # rete bayesiana: stima, inferenza, cross-fitting
-    ├── search.py              # ricerca su griglia e dispatch per ruoli: LcFS, A*
+    ├── ricerca.py             # percorso del mezzo: BFS, LcFS, A* Manhattan, A* con PD
+    ├── dispatch.py            # assegnazione dei mezzi: CSP con branch and bound
     ├── train_models.py        # nested CV, esperimenti A, B, rete, C, oracolo
     ├── sensitivita.py         # recupero delle CPT e rumore delle etichette
     ├── valutazione_dispatch.py # fonti di gravità valutate sul dispatch
@@ -115,15 +117,16 @@ La demo stima la gravità con ML, rete bayesiana e rete + regola della KB, ricav
 le motivazioni di ogni ruolo, assegna i mezzi con A* e verifica la proposta con i vincoli di integrità in Prolog.
 Il dispatch usa la gravità della fonte rete + KB, che nella valutazione end-to-end manca meno incidenti critici.
 
-Grafici in `plots/`, prodotti da `src/plotter.py`: `ml_modelli.png` (accuratezza, F1 macro e F1 pesata, media ± dev. std. per esperimento e modello), `ricerca_espansi.png`
-(nodi espansi di LcFS e A* al crescere degli incidenti), `dispatch_fonti.png` (fonti della gravità valutate sul dispatch).
+Grafici in `plots/`, prodotti da `src/plotter.py`: `ml_modelli.png` (accuratezza, F1 macro e F1 pesata, media ± dev. std. per esperimento e modello), `ricerca_percorsi.png`
+(nodi espansi dai quattro algoritmi e tempo in più della BFS), `assegnazione_bb.png` (branch and bound con e senza stima), `dispatch_fonti.png` (fonti della gravità valutate sul dispatch).
 
 ## Riproducibilità dei singoli passi
 
 ```
 python src/generate_dataset.py
 python -m pytest tests/        # KB, ricerca, rete bayesiana, adattatore NLP, valutazione
-python src/search.py           # confronto LcFS e A* sul dispatch
+python src/ricerca.py          # confronto BFS, LcFS e A* sul percorso
+python src/dispatch.py         # branch and bound con e senza stima
 python src/train_models.py     # nested CV
 python src/sensitivita.py      # analisi di sensibilità
 python src/valutazione_dispatch.py  # fonti di gravità sul dispatch
@@ -135,7 +138,8 @@ python src/valutazione_dispatch.py  # fonti di gravità sul dispatch
 - [x] Adattatore NLP, verificato da test automatici
 - [x] Knowledge base Prolog, con test di coerenza con `regola_gravita` (`tests/test_prolog.py`)
 - [x] Rete bayesiana, con test
-- [x] Ricerca: distanze A* su griglia, dispatch per ruoli con LcFS e A* ($h_{\min}$ e $h_{\text{libero}}$), test e confronto
+- [x] Ricerca del percorso: BFS, LcFS, A* con Manhattan e con PD, test e confronto
+- [x] Assegnazione dei mezzi come CSP con branch and bound, test e confronto
 - [x] Machine learning con nested CV: esperimenti A, B, rete, controlli C e oracolo
 - [x] Analisi di sensibilità: recupero delle CPT rispetto al generatore, rumore 0.05 / 0.12 / 0.20
 - [x] Valutazione end-to-end delle fonti di gravità sul dispatch

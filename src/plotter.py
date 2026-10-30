@@ -3,7 +3,8 @@
     python src/plotter.py
 
 - ml_modelli.png:      accuratezza, F1 macro e F1 pesata per esperimento e modello (media ± dev. std.)
-- ricerca_espansi.png: nodi espansi da LcFS e A* al crescere degli incidenti
+- ricerca_percorsi.png: nodi espansi da BFS, LcFS, A* Manhattan e A* PD; tempo in più della BFS
+- assegnazione_bb.png: nodi visitati dal branch and bound, con e senza stima
 - dispatch_fonti.png:  fonti della gravità valutate sul dispatch
 """
 
@@ -93,25 +94,58 @@ def grafico_ml() -> None:
     _salva(fig, "ml_modelli.png")
 
 
-def grafico_ricerca() -> None:
-    """Nodi espansi in scala logaritmica, un colore per algoritmo."""
-    ricerca = pd.read_csv(config.RESULTS_DIR / "search_riepilogo.csv")
-    fig, ax = plt.subplots(figsize=(6.5, 4.2))
-    for algoritmo, colore in [("LcFS", BLU), ("A* h_min", ARANCIO), ("A* h_libero", VERDE)]:
+def grafico_percorsi() -> None:
+    """Ricerca del percorso: nodi espansi per algoritmo e costo in più della BFS, al variare delle chiusure."""
+    ricerca = pd.read_csv(config.RESULTS_DIR / "ricerca_riepilogo.csv")
+    chiusure = sorted(ricerca.chiusure.unique())
+    etichette = [f"{100 * c:.0f}%" for c in chiusure]
+    fig, (sx, dx) = plt.subplots(1, 2, figsize=(12, 4.2))
+
+    for algoritmo, colore in [("BFS", GIALLO), ("LcFS", BLU), ("A* Manhattan", ARANCIO), ("A* PD", VERDE)]:
         dati = ricerca[ricerca.algoritmo == algoritmo]
-        ax.plot(dati.dimensione, dati.espansi_media, marker="o", color=colore, linewidth=2, label=algoritmo)
-        ultimo = dati.iloc[-1]
-        ax.annotate(f"{ultimo.espansi_media:,.0f}".replace(",", " "), (ultimo.dimensione, ultimo.espansi_media),
-                    xytext=(6, 0), textcoords="offset points", va="center", fontsize=8, color=GRIGIO)
+        sx.plot(etichette, dati.espansi_media, marker="o", color=colore, linewidth=2, label=algoritmo)
+    sx.set_ylim(bottom=0)
+    sx.set_xlabel("celle libere chiuse temporaneamente")
+    sx.set_ylabel(f"nodi espansi per percorso (media su {config.N_MAPPE * config.N_MEZZI_MAPPA})")
+    sx.set_title("Nodi espansi")
+    sx.legend(frameon=False)
+
+    bfs = ricerca[ricerca.algoritmo == "BFS"]
+    sx.yaxis.grid(True, color=GRIGIO_CHIARO)
+    dx.bar(etichette, bfs.costo_in_piu_pct_media, color=GIALLO, width=0.6)
+    for x, (v, ottimi) in enumerate(zip(bfs.costo_in_piu_pct_media, bfs.ottimi_pct)):
+        dx.text(x, v, f"{v:.1f}%\n(ottima nel {ottimi:.0f}%)", ha="center", va="bottom", color=GRIGIO, fontsize=8)
+    dx.set_xlabel("celle libere chiuse temporaneamente")
+    dx.set_ylabel("tempo in più rispetto all'ottimo (%)")
+    dx.set_title("BFS: tempo in più del percorso trovato")
+    dx.set_ylim(0, bfs.costo_in_piu_pct_media.max() * 1.35)
+    dx.yaxis.grid(True, color=GRIGIO_CHIARO)
+    dx.set_axisbelow(True)
+    fig.suptitle(f"Percorso del mezzo su mappe {config.DIM_GRIGLIA[0]}×{config.DIM_GRIGLIA[1]}: "
+                 "LcFS e A* trovano sempre l'ottimo", x=0.01, ha="left", fontsize=10)
+    _salva(fig, "ricerca_percorsi.png")
+
+
+def grafico_assegnazione() -> None:
+    """Branch and bound per l'assegnazione dei mezzi: nodi visitati con e senza stima."""
+    dati = pd.read_csv(config.RESULTS_DIR / "dispatch_riepilogo.csv")
+    fig, ax = plt.subplots(figsize=(6.5, 4.2))
+    for algoritmo, colore in [("senza stima", BLU), ("con stima", VERDE)]:
+        d = dati[dati.algoritmo == algoritmo]
+        ax.plot(d.incidenti, d.nodi_media, marker="o", color=colore, linewidth=2, label=algoritmo)
+        for n, nodi, completi, casi in zip(d.incidenti, d.nodi_media, d.completi, d.casi):
+            if completi < casi:
+                ax.annotate(f"{completi}/{casi}", (n, nodi), xytext=(6, -10), textcoords="offset points",
+                            fontsize=8, color=colore)
     ax.set_yscale("log")
-    ax.set_xticks(sorted(ricerca.dimensione.unique()))
-    ax.set_xlim(right=ricerca.dimensione.max() + 1.5)
+    ax.set_xticks(sorted(dati.incidenti.unique()))
     ax.set_xlabel("incidenti per scenario")
-    ax.set_ylabel(f"nodi espansi (media su {config.N_SCENARI_PER_DIMENSIONE} scenari)")
-    ax.set_title("Dispatch per ruoli: LcFS e A*")
+    ax.set_ylabel(f"nodi visitati (media su {config.N_SCENARI_PER_DIMENSIONE} scenari)")
+    ax.set_title(f"Assegnazione dei mezzi: branch and bound\n(x/y: casi chiusi entro {config.LIMITE_NODI:,} nodi)"
+                 .replace(",", " "))
     ax.yaxis.grid(True, color=GRIGIO_CHIARO)
     ax.legend(frameon=False)
-    _salva(fig, "ricerca_espansi.png")
+    _salva(fig, "assegnazione_bb.png")
 
 
 def grafico_dispatch() -> None:
@@ -156,7 +190,8 @@ def grafico_dispatch() -> None:
 
 def tutti() -> None:
     grafico_ml()
-    grafico_ricerca()
+    grafico_percorsi()
+    grafico_assegnazione()
     grafico_dispatch()
     print(f"Grafici scritti in {config.PLOTS_DIR}")
 

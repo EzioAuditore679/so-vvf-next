@@ -13,20 +13,28 @@ N_FOLD_CV = 5
 RUMORE_GRAVITA = 0.12  # probabilità che l'etichetta osservata si sposti di un livello. Assunzione dichiarata.
 LAPLACE_ALPHA = 1.0  # pseudoconteggio per cella delle CPT della rete bayesiana
 
-# Ricerca nello spazio degli stati (dispatch dei mezzi)
-DIM_GRIGLIA = (20, 20)
-PROB_OSTACOLO = 0.2
+# Mappa e ricerca del percorso (src/ricerca.py)
+DIM_GRIGLIA = (30, 30)
+PROB_OSTACOLO = 0.2      # ostacoli permanenti (edifici)
+PROB_CELLA_LENTA = 0.15  # celle lente (centro storico, traffico): entrarci costa COSTO_CELLA_LENTA
+COSTO_CELLA_LENTA = 3
+PROB_CHIUSURA = 0.05     # chiusure temporanee negli scenari di dispatch
+PROB_CHIUSURE = [0.0, 0.05, 0.10, 0.20]  # livelli di chiusure nel confronto degli algoritmi
+N_MAPPE = 30             # mappe per livello di chiusure, un incidente ciascuna
+N_MEZZI_MAPPA = 8        # mezzi per incidente: la tabella della PD è riusata da tutti
+LIMITE_NODI = 500_000    # oltre questo numero di nodi la ricerca è segnata come non completata
+
+# Assegnazione dei mezzi come CSP (src/dispatch.py)
 N_INCIDENTI_SCENARI = [2, 4, 6, 8, 10]
-# Un incidente richiede in media 1.6 ruoli (misurato sul modello generativo, docs/ricerca.md §2.1).
+# Un incidente richiede in media 1.6 ruoli (misurato sul modello generativo).
 N_MEZZI_PER_INCIDENTE = 2.2  # mezzi disponibili = ceiling(incidenti * questo valore)
 # Composizione della flotta, proporzionale alla domanda media di ciascun ruolo.
 COMPOSIZIONE_FLOTTA = {"autopompa": 0.50, "nucleo_nbcr": 0.20, "canadair": 0.15, "autoscala": 0.15}
 # Costo di un ruolo lasciato scoperto (rinforzi da un comando vicino). Supera il tempo di percorrenza
-# tipico sulla griglia, quindi la ricerca lascia scoperto un ruolo solo se non ha alternative.
-PENALITA_RUOLO_SCOPERTO = 60
+# tipico sulla mappa, quindi il dispatch lascia scoperto un ruolo solo se non ha alternative.
+PENALITA_RUOLO_SCOPERTO = 120
 DISTANZA_ADIACENZA = 3  # due incidenti a distanza di Manhattan <= 3 sono adiacenti
 N_SCENARI_PER_DIMENSIONE = 20  # si riportano media ± deviazione standard
-LIMITE_NODI = 500_000  # oltre questo numero di nodi il caso è segnato come non completato
 
 # Valutazione end-to-end delle fonti di gravità sul dispatch
 N_INCIDENTI_E2E = 5

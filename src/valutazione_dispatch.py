@@ -1,6 +1,6 @@
 """Valutazione end-to-end: quanto pesa l'errore sulla gravità nel dispatch.
 
-Su ogni scenario la squadra richiesta (KB Prolog) e il dispatch (A* con h_libero) sono calcolati con
+Su ogni scenario la squadra richiesta (KB Prolog) e il dispatch (branch and bound, src/dispatch.py) sono calcolati con
 la gravità stimata da una fonte, poi il piano viene giudicato con la gravità vera.
 
 Fonti della gravità:
@@ -29,7 +29,7 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold  # noqa: E402
 import bayes_engine as be  # noqa: E402
 import config  # noqa: E402
 import generate_dataset as gd  # noqa: E402
-import search as s  # noqa: E402
+import dispatch as dp  # noqa: E402
 import train_models as tm  # noqa: E402
 
 FONTI = ["vera", "ml", "rete", "rete_kb", "prudente"]
@@ -49,7 +49,7 @@ def addestra_stimatori(df: pd.DataFrame, seme: int = config.SEME) -> dict:
     return {"ml": ricerca.best_estimator_, "rete": be.stima(df), "colonne_ml": list(X.columns)}
 
 
-def _evidenza(caso: s.Caso) -> pd.DataFrame:
+def _evidenza(caso: dp.Caso) -> pd.DataFrame:
     """Campi estratti dal testo di ogni chiamata, più il registro della zona."""
     ids = sorted(caso.incidenti)
     righe = [caso.incidenti[i][0] for i in ids]
@@ -60,7 +60,7 @@ def _evidenza(caso: s.Caso) -> pd.DataFrame:
     return ev
 
 
-def stime_gravita(stimatori: dict, caso: s.Caso, kb) -> dict:
+def stime_gravita(stimatori: dict, caso: dp.Caso, kb) -> dict:
     """Per ogni fonte: {incidente: gravità} oppure le velocità da dare alla regola della KB."""
     ev = _evidenza(caso)
     ids = list(ev.index)
@@ -76,12 +76,12 @@ def stime_gravita(stimatori: dict, caso: s.Caso, kb) -> dict:
     }
 
 
-def _con_velocita(caso: s.Caso, velocita: dict | None) -> s.Caso:
+def _con_velocita(caso: dp.Caso, velocita: dict | None) -> dp.Caso:
     """Copia del caso con la velocità del fuoco sostituita da una stima (per la regola della KB)."""
     if velocita is None:
         return caso
     incidenti = {i: ({**v, "velocita_fuoco": velocita[i]}, cella) for i, (v, cella) in caso.incidenti.items()}
-    return s.Caso(caso.griglia, caso.mezzi, incidenti)
+    return dp.Caso(caso.mappa, caso.mezzi, incidenti)
 
 
 # --- Giudizio di un piano con la gravità vera ----------------------------------------------------
@@ -117,12 +117,11 @@ def giudica(assegnazioni: list, adatti_veri: dict, costo: dict, penalita: float)
                 costo_valutato=viaggio + penalita * scoperti)
 
 
-def _risolvi(sc: s.Scenario) -> tuple[float, list]:
-    p = s.Dispatch(sc)
-    r = s.ricerca(p.inizio(), p.obiettivo, p.successori, p.h_libero)
-    if not r.completo:
+def _risolvi(sc: dp.Scenario) -> tuple[float, list]:
+    s = dp.risolvi(sc)
+    if not s.completa:
         raise RuntimeError("dispatch oltre LIMITE_NODI: ridurre il numero di incidenti")
-    return r.costo, p.piano(r.cammino)[0]
+    return s.costo, s.assegnazioni
 
 
 # --- Esperimento ---------------------------------------------------------------------------------
@@ -133,17 +132,17 @@ def valuta(stimatori: dict, kb, n_incidenti: int = config.N_INCIDENTI_E2E,
     n_mezzi = math.ceil(n_incidenti * config.N_MEZZI_PER_INCIDENTE)
     righe = []
     for k in range(n_scenari):
-        caso = s.genera_caso(rng, n_incidenti, n_mezzi, variabili=lambda r: gd.genera_record(r, 0))
-        costo = s.costi_caso(caso)
-        adatti_veri = s.adatti_con_kb(kb, caso)
+        caso = dp.genera_caso(rng, n_incidenti, n_mezzi, variabili=lambda r: gd.genera_record(r, 0))
+        costo = dp.costi_caso(caso)
+        adatti_veri = dp.adatti_con_kb(kb, caso)
         g_vera = {i: kb.gravita(i) for i in caso.incidenti}
         op_vera = {i: kb.gravita_operativa(i) for i in caso.incidenti}
-        ottimo, _ = _risolvi(s.scenario_da_adatti(adatti_veri, tuple(caso.mezzi), costo))
+        ottimo, _ = _risolvi(dp.scenario_da_adatti(adatti_veri, tuple(caso.mezzi), costo))
         for fonte, stima in stime_gravita(stimatori, caso, kb).items():
             caso_f = _con_velocita(caso, stima["velocita"])
-            adatti = s.adatti_con_kb(kb, caso_f, stima["gravita"])
+            adatti = dp.adatti_con_kb(kb, caso_f, stima["gravita"])
             g_stimata = {i: kb.gravita_operativa(i) for i in caso.incidenti}
-            _, piano = _risolvi(s.scenario_da_adatti(adatti, tuple(caso.mezzi), costo))
+            _, piano = _risolvi(dp.scenario_da_adatti(adatti, tuple(caso.mezzi), costo))
             esito = giudica(piano, adatti_veri, costo, config.PENALITA_RUOLO_SCOPERTO)
             righe.append(dict(
                 scenario=k, fonte=fonte,

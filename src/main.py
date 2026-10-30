@@ -6,8 +6,8 @@
     python src/main.py grafici                          solo i grafici (src/plotter.py), dai CSV in results/
 
 La demo percorre l'intera catena: testo della chiamata → campi (NLP) → gravità stimata da ML, rete
-bayesiana e rete + regola della KB → squadra richiesta con le spiegazioni Prolog → dispatch con A*
-→ verifica di integrità della proposta. Il dispatch usa la gravità della fonte rete + KB, che nella
+bayesiana e rete + regola della KB → squadra richiesta con le spiegazioni Prolog → assegnazione dei mezzi
+(CSP, branch and bound) → percorsi (BFS, LcFS, A*) → verifica di integrità della proposta. Il dispatch usa la gravità della fonte rete + KB, che nella
 valutazione end-to-end manca meno incidenti critici (results/dispatch_e2e_riepilogo.csv).
 """
 
@@ -51,17 +51,19 @@ FLOTTA = {
 }
 
 
-def _griglia_demo():
-    import search as s
+def _mappa_demo():
+    """Mappa generata dal seme, con le celle di incidenti e stazioni libere."""
+    import ricerca
 
-    g = s.genera_griglia(random.Random(config.SEME), *config.DIM_GRIGLIA, config.PROB_OSTACOLO)
+    m = ricerca.genera_mappa(random.Random(config.SEME))
     occupate = {c["cella"] for c in CHIAMATE} | {cella for _, cella in FLOTTA.values()}
-    return s.Griglia(g.righe, g.colonne, g.ostacoli - occupate)
+    return ricerca.Mappa(m.righe, m.colonne, m.ostacoli - occupate, m.lente, m.chiusure - occupate)
 
 
 def demo() -> None:
     import bayes_engine as be
-    import search as s
+    import dispatch as dp
+    import ricerca
     import valutazione_dispatch as vd
     from domain import TipoMezzo
     from nlp_extract import estrai_campi
@@ -91,14 +93,14 @@ def demo() -> None:
     vel = dict(zip(ids, be.velocita_piu_probabile(stimatori["rete"], ev, be.OSSERVATE)))
 
     kb = KnowledgeBase()
-    griglia = _griglia_demo()
-    caso = s.Caso(griglia, {m: (TipoMezzo(t), cella) for m, (t, cella) in FLOTTA.items()},
+    mappa = _mappa_demo()
+    caso = dp.Caso(mappa, {m: (TipoMezzo(t), cella) for m, (t, cella) in FLOTTA.items()},
                   {c["id"]: (None, c["cella"]) for c in CHIAMATE})
     incidenti = [dict(id=i, tipo=campi[i]["tipo_edificio"], piano=campi[i]["piano"] or 0,
                       sostanze=campi[i]["sostanze_pericolose"], persone=campi[i]["persone"],
                       meteo=campi[i]["meteo"]) for i in ids]
     registro = {c["id"]: (c["vulnerabilita"], c["adiacenti"]) for c in CHIAMATE}
-    adiacenze = s.adiacenze_caso(caso)
+    adiacenze = dp.adiacenze_caso(caso)
     mezzi = {m: t for m, (t, _) in FLOTTA.items()}
 
     def carica(velocita):
@@ -128,20 +130,33 @@ def demo() -> None:
             adatti[(i, ruolo)] = kb.mezzi_adatti(i, ruolo)
             print(f"  {i} {ruolo:16s} perché {motivo:32s} mezzi adatti: {', '.join(adatti[(i, ruolo)]) or '-'}")
 
-    print("\n4. Dispatch (A* con h_libero; LcFS per confronto)")
-    sc = s.scenario_da_adatti(adatti, tuple(FLOTTA), s.costi_caso(caso))
-    problema = s.Dispatch(sc)
-    r = s.ricerca(problema.inizio(), problema.obiettivo, problema.successori, problema.h_libero)
-    r0 = s.ricerca(problema.inizio(), problema.obiettivo, problema.successori, lambda st: 0)
-    assegnazioni, scoperti = problema.piano(r.cammino)
-    for m, i, ruolo in sorted(assegnazioni, key=lambda a: (a[1], a[2])):
+    print("\n4. Assegnazione dei mezzi: CSP con branch and bound")
+    sc = dp.scenario_da_adatti(adatti, tuple(FLOTTA), dp.costi_caso(caso))
+    soluzione = dp.risolvi(sc)
+    senza_stima = dp.risolvi(sc, usa_stima=False)
+    for m, i, ruolo in sorted(soluzione.assegnazioni, key=lambda a: (a[1], a[2])):
         print(f"  {m:6s} ({FLOTTA[m][0]:12s}) → {i} {ruolo:16s} tempo {sc.costo[(m, i)]}")
-    for i, ruolo in scoperti:
+    for i, ruolo in soluzione.scoperti:
         print(f"  ruolo scoperto: {i} {ruolo} → richiesta di rinforzi (penalità {sc.penalita})")
-    print(f"  Costo totale {r.costo}; nodi espansi: A* {r.espansi}, LcFS {r0.espansi} (stesso costo: {r0.costo == r.costo})")
+    print(f"  Costo totale {soluzione.costo}; nodi visitati: con stima {soluzione.nodi}, "
+          f"senza stima {senza_stima.nodi} (stesso costo: {senza_stima.costo == soluzione.costo})")
 
-    violazioni = kb.violazioni(assegnazioni)
-    print("\n5. Verifica di integrità in Prolog:", "proposta valida" if not violazioni else violazioni)
+    print("\n5. Percorsi dei mezzi assegnati: nodi espansi da ogni algoritmo")
+    print(f"  {'mezzo':6s} {'incidente':9s} {'tempo':>5s} {'BFS':>14s} {'LcFS':>6s} {'A* Manhattan':>13s} {'A* PD':>6s}")
+    for m, i, _ in sorted(soluzione.assegnazioni, key=lambda a: (a[1], a[0])):
+        partenza, arrivo = FLOTTA[m][1], dict((c["id"], c["cella"]) for c in CHIAMATE)[i]
+        tabella, espansi_pd = ricerca.cost_to_goal(mappa, arrivo)
+        obiettivo = lambda c, arrivo=arrivo: c == arrivo
+        b = ricerca.bfs(partenza, obiettivo, mappa.successori)
+        e = {nome: ricerca.a_star(partenza, obiettivo, mappa.successori, h).espansi
+             for nome, h in [("LcFS", lambda c: 0), ("M", ricerca.h_manhattan(arrivo)), ("PD", ricerca.h_pd(tabella))]}
+        bfs_testo = f"{b.espansi} (tempo {b.costo:g})"
+        print(f"  {m:6s} {i:9s} {sc.costo[(m, i)]:>5g} {bfs_testo:>14s} {e['LcFS']:>6} {e['M']:>13} {e['PD']:>6}")
+    print(f"  La tabella della PD costa {espansi_pd} nodi per incidente (sulla mappa senza chiusure) "
+          f"ed è riusata da tutti i mezzi diretti a quell'incidente.")
+
+    violazioni = kb.violazioni(soluzione.assegnazioni)
+    print("\n6. Verifica di integrità in Prolog:", "proposta valida" if not violazioni else violazioni)
 
 
 # --- Pipeline ------------------------------------------------------------------------------------
@@ -154,7 +169,8 @@ def _esegui(*argomenti: str) -> None:
 def esperimenti(sensibilita: bool = True) -> None:
     _esegui("src/generate_dataset.py")
     _esegui("-m", "pytest", "-q", "tests")
-    _esegui("src/search.py")
+    _esegui("src/ricerca.py")
+    _esegui("src/dispatch.py")
     _esegui("src/train_models.py")
     if sensibilita:
         _esegui("src/sensitivita.py")
