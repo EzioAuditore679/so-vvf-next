@@ -10,7 +10,8 @@ SEME = 42
 # Dataset
 N_TESTI_SINTETICI = 1000
 N_FOLD_CV = 5
-RUMORE_GRAVITA = 0.12  # probabilità che l'etichetta osservata si sposti di un livello. Assunzione dichiarata.
+RUMORE_GRAVITA = 0.12  # probabilità di un evento di rumore sull'etichetta (assunzione dichiarata);
+# agli estremi metà degli eventi è assorbita, tasso effettivo circa 0.085 (docs/modello_generativo.md)
 LAPLACE_ALPHA = 1.0  # pseudoconteggio per cella delle CPT della rete bayesiana
 
 # Mappa e ricerca del percorso (src/ricerca.py)

@@ -45,9 +45,25 @@ Punteggio = punti(persone) + punti(velocità) + [sostanze sì] + [vulnerabilità
 - Punteggio massimo 7.
 - **Critico** se punteggio ≥ 5, **alto** se ≥ 3, altrimenti **basso**.
 
-L'etichetta osservata è la regola con rumore: con probabilità `RUMORE_GRAVITA = 0.12` si sposta
-di un livello (verso l'alto o verso il basso). Il rumore rappresenta la variabilità non
-modellata del mondo reale.
+L'etichetta osservata è la regola con rumore: con probabilità `RUMORE_GRAVITA = 0.12` si tenta
+uno spostamento di un livello, verso l'alto o verso il basso con uguale probabilità. Il rumore
+rappresenta la variabilità non modellata del mondo reale.
+
+Agli estremi lo spostamento verso l'esterno è troncato: da critico non si sale, da basso non si
+scende, e l'etichetta resta invariata. Il tasso effettivo di etichette cambiate è quindi
+`RUMORE_GRAVITA × (P(alto) + ½ P(critico) + ½ P(basso))`. Con la distribuzione delle classi del
+generatore (basso 46%, alto 41%, critico 13%, misurata su 200 000 campioni) vale circa 0.705 × rumore:
+
+| `RUMORE_GRAVITA` | tasso effettivo | tetto di accuratezza (1 − tasso) | accuratezza dell'oracolo (reg. logistica) |
+|---|---|---|---|
+| 0.05 | 0.035 | 0.965 | 0.974 ± 0.017 |
+| 0.12 | 0.085 | 0.915 | 0.916 ± 0.021 |
+| 0.20 | 0.141 | 0.859 | 0.847 ± 0.018 |
+
+L'oracolo vede tutte le cause della gravità, quindi l'unico errore che non può eliminare è il rumore
+dell'etichetta: la sua accuratezza coincide con il tetto teorico entro una deviazione standard.
+È una verifica di coerenza tra generatore, dataset e pipeline di apprendimento
+(valori da `results/sensitivita_rumore.csv`).
 
 ## Cosa vede ciascun modello
 
@@ -75,13 +91,14 @@ di training è calcolata fuori fold (cross-fitting).
 1. **Dati sintetici.** Le probabilità sono assunzioni scelte a mano, non stime da dati reali.
    Qualunque risultato dipende da queste scelte.
 2. **Circolarità delle CPT.** La rete bayesiana stimata sui dati recupera le probabilità del
-   generatore, che non è un esperto indipendente ma la fonte stessa dei dati. L'analisi di sensibilità
-   (`src/sensitivita.py`) misura quanto bene lo stimatore le recupera (errore medio 0.054 con 1000 righe,
-   0.042 con 20 000), non se sono corrette per il mondo reale.
+   generatore, che non è un esperto indipendente ma la fonte stessa dei dati. I test in
+   `tests/test_bayes.py` verificano che con 20 000 righe lo stimatore le recuperi entro 0.03,
+   non che siano corrette per il mondo reale.
 3. **Adiacenti non modellato nella rete bayesiana.** La variabile è nel generatore e nella KB,
    ma non nella rete: il limite va riportato.
 4. **Rumore arbitrario.** Il valore 0.12 è una scelta. L'analisi di sensibilità su 0.05, 0.12 e 0.20
-   mostra quanto il risultato dipende dal rumore.
+   (`src/sensitivita.py`) mostra che le conclusioni non cambiano: B supera A, la rete è alla pari
+   con C, l'oracolo resta molto sopra.
 5. **Testo e campi osservabili.** Il testo è generato dai campi osservabili con template e
    rumore del parlato. Su questi testi l'estrattore NLP ricava tutti i campi correttamente, quindi
    nell'esperimento A i campi estratti coincidono con quelli veri: l'NLP non aggiunge rumore al ML.

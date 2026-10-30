@@ -87,7 +87,7 @@ so-vvf-next/
     ├── ricerca.py             # percorso del mezzo: BFS, LcFS, A* Manhattan, A* con PD
     ├── assegnazioni.py        # assegnazione dei mezzi: simulated annealing
     ├── train_models.py        # nested CV, esperimenti A, B, rete, C, oracolo
-    ├── sensitivita.py         # recupero delle CPT e rumore delle etichette
+    ├── sensitivita.py         # sensibilità al rumore delle etichette
     ├── valutazione_dispatch.py # fonti di gravità valutate sul dispatch
     ├── plotter.py             # grafici dai CSV in results/
     └── main.py                # demo integrata e pipeline degli esperimenti
@@ -141,7 +141,7 @@ python src/valutazione_dispatch.py  # fonti di gravità sul dispatch
 - [x] Ricerca del percorso: BFS, LcFS, A* con Manhattan e con PD, test e confronto
 - [x] Assegnazione dei mezzi con simulated annealing, taratura, test e confronto con l'ottimo
 - [x] Machine learning con nested CV: esperimenti A, B, rete, controlli C e oracolo
-- [x] Analisi di sensibilità: recupero delle CPT rispetto al generatore, rumore 0.05 / 0.12 / 0.20
+- [x] Analisi di sensibilità al rumore delle etichette: 0.05 / 0.12 / 0.20
 - [x] Valutazione end-to-end delle fonti di gravità sul dispatch
 - [x] Pipeline principale, demo e grafici
 - [ ] Relazione

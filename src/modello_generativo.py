@@ -129,7 +129,10 @@ def regola_gravita(v: dict) -> Gravita:
 
 
 def gravita_osservata(rng: random.Random, regola: Gravita) -> Gravita:
-    """Etichetta osservata: con probabilità config.RUMORE_GRAVITA si sposta di un livello."""
+    """Etichetta osservata: con probabilità config.RUMORE_GRAVITA si tenta uno spostamento di un livello.
+
+    Agli estremi (critico, basso) lo spostamento verso l'esterno è troncato e l'etichetta resta invariata.
+    """
     if rng.random() >= config.RUMORE_GRAVITA:
         return regola
     i = LIVELLI_GRAVITA.index(regola) + rng.choice([-1, 1])
