@@ -92,7 +92,8 @@ so-vvf-next/
     ├── train_models.py        # nested CV, esperimenti A, B, rete, C, oracolo
     ├── sensitivita.py         # recupero delle CPT e rumore delle etichette
     ├── valutazione_dispatch.py # fonti di gravità valutate sul dispatch
-    └── main.py                # demo integrata, pipeline degli esperimenti, grafici
+    ├── plotter.py             # grafici dai CSV in results/
+    └── main.py                # demo integrata e pipeline degli esperimenti
 ```
 
 ## Installazione
@@ -112,14 +113,14 @@ python -c "import pyswip; print('ok')"
 python src/main.py                                  # demo: 4 chiamate dal testo al dispatch, con spiegazioni (pochi secondi)
 python src/main.py esperimenti                      # rigenera dataset, test, risultati e grafici (~15 minuti)
 python src/main.py esperimenti --senza-sensibilita  # come sopra, senza l'analisi di sensibilità (~5 minuti)
-python src/main.py grafici                          # solo i grafici in plots/, dai CSV in results/
+python src/main.py grafici                          # solo i grafici in plots/, dai CSV in results/ (src/plotter.py)
 ```
 
 La demo stima la gravità con ML, rete bayesiana e rete + regola della KB, ricava la squadra dalla KB con
 le motivazioni di ogni ruolo, assegna i mezzi con A* e verifica la proposta con i vincoli di integrità in Prolog.
 Il dispatch usa la gravità della fonte rete + KB, che nella valutazione end-to-end manca meno incidenti critici.
 
-Grafici in `plots/`: `ml_modelli.png` (media ± dev. std. per esperimento e modello), `ricerca_espansi.png`
+Grafici in `plots/`, prodotti da `src/plotter.py`: `ml_modelli.png` (accuratezza, F1 macro e F1 pesata, media ± dev. std. per esperimento e modello), `ricerca_espansi.png`
 (nodi espansi di LcFS e A* al crescere degli incidenti), `dispatch_fonti.png` (fonti della gravità valutate sul dispatch).
 
 ## Riproducibilità dei singoli passi

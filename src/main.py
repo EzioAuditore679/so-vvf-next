@@ -3,7 +3,7 @@
     python src/main.py                                  demo su quattro chiamate (pochi secondi)
     python src/main.py esperimenti                      rigenera dataset, test, risultati e grafici (~15 min)
     python src/main.py esperimenti --senza-sensibilita  come sopra, senza l'analisi di sensibilità (~5 min)
-    python src/main.py grafici                          solo i grafici, dai CSV in results/
+    python src/main.py grafici                          solo i grafici (src/plotter.py), dai CSV in results/
 
 La demo percorre l'intera catena: testo della chiamata → campi (NLP) → gravità stimata da ML, rete
 bayesiana e rete + regola della KB → squadra richiesta con le spiegazioni Prolog → dispatch con A*
@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT / "src"))
 import pandas as pd
 
 import config
+import plotter
 
 
 # Quattro chiamate pensate per mostrare i casi interessanti. c2 e c3 sono vicine: se c2 è critica,
@@ -143,131 +144,6 @@ def demo() -> None:
     print("\n5. Verifica di integrità in Prolog:", "proposta valida" if not violazioni else violazioni)
 
 
-# --- Grafici ---
-
-# Palette usata
-COLORI = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"]
-TESTO, TESTO_2, GRIGLIA, FONDO = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
-
-
-def _stile(ax) -> None:
-    ax.set_facecolor(FONDO)
-    for lato in ("top", "right"):
-        ax.spines[lato].set_visible(False)
-    for lato in ("left", "bottom"):
-        ax.spines[lato].set_color(GRIGLIA)
-    ax.tick_params(colors=TESTO_2, labelsize=9)
-    ax.yaxis.grid(True, color=GRIGLIA, linewidth=0.8)
-    ax.set_axisbelow(True)
-
-
-def grafici() -> None:
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    config.PLOTS_DIR.mkdir(parents=True, exist_ok=True)
-    plt.rcParams.update({"font.size": 10, "text.color": TESTO, "axes.labelcolor": TESTO_2,
-                         "figure.facecolor": FONDO})
-
-    # 1. Modelli: media ± dev. std. su 5 fold esterni, per esperimento.
-    ml = pd.read_csv(config.RESULTS_DIR / "ml_riepilogo.csv")
-    base = ml[ml.modello == "baseline_maggioranza"].iloc[0]
-    modelli = ["regressione_logistica", "random_forest", "naive_bayes", "rete_bayesiana"]
-    nomi = {"regressione_logistica": "regressione logistica", "random_forest": "random forest",
-            "naive_bayes": "naive Bayes", "rete_bayesiana": "rete bayesiana"}
-    esperimenti = ["A", "B", "rete", "C", "oracolo"]
-    fig, assi = plt.subplots(1, 2, figsize=(12, 4.4), sharey=True)
-    larghezza = 0.2
-    for ax, (metrica, titolo) in zip(assi, [("f1", "Macro F1"), ("accuracy", "Accuratezza")]):
-        _stile(ax)
-        for e, esp in enumerate(esperimenti):
-            presenti = [m for m in modelli if ((ml.esperimento == esp) & (ml.modello == m)).any()]
-            for k, mod in enumerate(presenti):
-                riga = ml[(ml.esperimento == esp) & (ml.modello == mod)].iloc[0]
-                x = e + (k - (len(presenti) - 1) / 2) * larghezza
-                v = riga[f"{metrica}_media"]
-                ax.bar(x, v, larghezza * 0.9, color=COLORI[modelli.index(mod)], yerr=riga[f"{metrica}_dev"],
-                       ecolor=TESTO_2, capsize=2, label=nomi[mod] if e == esperimenti.index(
-                           ml[ml.modello == mod].esperimento.iloc[0]) else None)
-                ax.text(x, 0.03, f"{v:.2f}", rotation=90, ha="center", va="bottom", fontsize=7, color="white")
-        ax.axhline(base[f"{metrica}_media"], color=TESTO_2, linestyle="--", linewidth=1,
-                   label="baseline a maggioranza")
-        ax.set_xticks(np.arange(len(esperimenti)), esperimenti)
-        ax.set_ylim(0, 1)
-        ax.set_title(f"{titolo} (media ± dev. std., nested CV 5×5)", fontsize=10, loc="left")
-    assi[0].legend(frameon=False, fontsize=8, loc="upper left")
-    fig.tight_layout()
-    fig.savefig(config.PLOTS_DIR / "ml_modelli.png", dpi=150)
-    plt.close(fig)
-
-    # 2. Ricerca: nodi espansi in funzione del numero di incidenti.
-    ric = pd.read_csv(config.RESULTS_DIR / "search_riepilogo.csv")
-    fig, ax = plt.subplots(figsize=(6.5, 4.2))
-    _stile(ax)
-    for k, alg in enumerate(["LcFS", "A* h_min", "A* h_libero"]):
-        sub = ric[ric.algoritmo == alg]
-        ax.plot(sub.dimensione, sub.espansi_media, color=COLORI[k], linewidth=2, marker="o", markersize=7,
-                markeredgecolor=FONDO, markeredgewidth=2, label=alg)
-        ultimo = sub.iloc[-1]
-        ax.annotate(f"{ultimo.espansi_media:,.0f}".replace(",", " "), (ultimo.dimensione, ultimo.espansi_media),
-                    textcoords="offset points", xytext=(6, 0), va="center", fontsize=8, color=TESTO_2)
-    ax.set_yscale("log")
-    ax.set_xlabel("incidenti per scenario")
-    ax.set_ylabel("nodi espansi (media su 20 scenari)")
-    ax.set_title("Dispatch per ruoli: LcFS e A*", fontsize=10, loc="left")
-    ax.set_xticks(sorted(ric.dimensione.unique()))
-    ax.set_xlim(right=ric.dimensione.max() + 1.5)
-    ax.legend(frameon=False, fontsize=8)
-    fig.tight_layout()
-    fig.savefig(config.PLOTS_DIR / "ricerca_espansi.png", dpi=150)
-    plt.close(fig)
-
-    # 3. Fonti della gravità valutate sul dispatch (la fonte "vera" è il riferimento a zero).
-    fonti = ["ml", "rete", "rete_kb", "prudente"]
-    etichette = {"ml": "ML", "rete": "rete", "rete_kb": "rete + KB", "prudente": "prudente"}
-    scenari = pd.read_csv(config.RESULTS_DIR / "dispatch_e2e_scenari.csv")
-    rng = np.random.default_rng(config.SEME)
-
-    def media_ic(fonte: str, col: str) -> tuple[float, float, float]:
-        """Media e intervallo di confidenza al 95% della media (bootstrap sugli scenari)."""
-        x = scenari.loc[scenari.fonte == fonte, col].to_numpy(dtype=float)
-        medie = rng.choice(x, (2000, len(x))).mean(axis=1)
-        return x.mean(), *np.percentile(medie, [2.5, 97.5])
-
-    pannelli = [
-        ("critici_mancati", "somma", "Incidenti critici mancati (su {n})"),
-        ("sovrastimati", "media", "Incidenti sovrastimati per scenario"),
-        ("regret", "media", "Costo in più rispetto all'ottimo"),
-    ]
-    fig, assi = plt.subplots(1, 3, figsize=(12, 3.8))
-    for ax, (col, tipo, titolo) in zip(assi, pannelli):
-        _stile(ax)
-        if tipo == "somma":
-            valori = [scenari.loc[scenari.fonte == f, col].sum() for f in fonti]
-            errori = None
-        else:
-            stime = [media_ic(f, col) for f in fonti]
-            valori = [m for m, _, _ in stime]
-            errori = np.array([[m - lo for m, lo, _ in stime], [hi - m for m, _, hi in stime]])
-        ax.bar(range(len(fonti)), valori, 0.6, color=COLORI[:len(fonti)], yerr=errori, ecolor=TESTO_2, capsize=3)
-        for x, v in enumerate(valori):
-            testo = f"{v:.0f}" if tipo == "somma" else f"{v:.2f}"
-            ax.text(x + (0.08 if errori is not None else 0), v, testo, ha="left" if errori is not None else "center",
-                    va="bottom", fontsize=8, color=TESTO)
-        ax.set_xticks(range(len(fonti)), [etichette[f] for f in fonti])
-        n = int(scenari.loc[scenari.fonte == "ml", "critici_veri"].sum())
-        ax.set_title(titolo.format(n=n), fontsize=10, loc="left")
-    fig.suptitle(f"Fonti della gravità valutate sul dispatch ({config.N_SCENARI_E2E} scenari da "
-                 f"{config.N_INCIDENTI_E2E} incidenti; media e IC 95% bootstrap della media)", fontsize=10, x=0.01, ha="left")
-    fig.tight_layout()
-    fig.savefig(config.PLOTS_DIR / "dispatch_fonti.png", dpi=150)
-    plt.close(fig)
-    print(f"Grafici scritti in {config.PLOTS_DIR}")
-
-
 # --- Pipeline ------------------------------------------------------------------------------------
 
 def _esegui(*argomenti: str) -> None:
@@ -283,7 +159,7 @@ def esperimenti(sensibilita: bool = True) -> None:
     if sensibilita:
         _esegui("src/sensitivita.py")
     _esegui("src/valutazione_dispatch.py")
-    grafici()
+    plotter.tutti()
 
 
 if __name__ == "__main__":
@@ -296,4 +172,4 @@ if __name__ == "__main__":
     elif args.comando == "esperimenti":
         esperimenti(not args.senza_sensibilita)
     else:
-        grafici()
+        plotter.tutti()

@@ -73,6 +73,28 @@ def _pipeline(stimatore, colonne: list) -> Pipeline:
     return Pipeline([("pre", ColumnTransformer(parti)), ("clf", stimatore)])
 
 
+METRICHE = ["accuracy", "f1_macro", "f1_pesata"]
+
+
+def metriche(y_vero, y_pred) -> dict:
+    """Accuratezza, F1 macro (ogni classe pesa uguale) e F1 pesata (ogni classe pesa quanto la sua frequenza)."""
+    return dict(
+        accuracy=accuracy_score(y_vero, y_pred),
+        f1_macro=f1_score(y_vero, y_pred, average="macro"),
+        f1_pesata=f1_score(y_vero, y_pred, average="weighted"),
+    )
+
+
+def riassumi(righe: list[dict], chiavi: list) -> pd.DataFrame:
+    """Media e deviazione standard di ogni metrica sui fold esterni."""
+    gruppi = pd.DataFrame(righe).groupby(chiavi)
+    aggregati = {}
+    for m in METRICHE:
+        aggregati[f"{m}_media"] = (m, "mean")
+        aggregati[f"{m}_dev"] = (m, "std")
+    return gruppi.agg(**aggregati).reset_index()
+
+
 def _fold_esterni(y: np.ndarray, seme: int):
     return StratifiedKFold(config.N_FOLD_CV, shuffle=True, random_state=seme).split(np.zeros(len(y)), y)
 
@@ -105,8 +127,7 @@ def _valuta(esperimento: str, X: pd.DataFrame, y: np.ndarray, colonne: list,
             pred = modello.predict(X_te)
             righe.append(dict(
                 esperimento=esperimento, modello=nome, fold=fold,
-                accuracy=accuracy_score(y_te, pred),
-                f1_macro=f1_score(y_te, pred, average="macro"),
+                **metriche(y_te, pred),
                 parametri=str(parametri),
             ))
     return righe
@@ -139,7 +160,7 @@ def esegui(df: pd.DataFrame, seme: int = config.SEME) -> list[dict]:
         pred = be.gravita_piu_probabile(rete, ev_rete.iloc[te], colonne_rete)
         righe_rete.append(dict(
             esperimento="rete", modello="rete_bayesiana", fold=fold,
-            accuracy=accuracy_score(y[te], pred), f1_macro=f1_score(y[te], pred, average="macro"),
+            **metriche(y[te], pred),
             parametri=str({"alpha": alpha}),
         ))
     righe.extend(_valuta("B", X_b, y, CAMPI_TESTO + CAMPI_REGISTRO, probabilita, seme))
@@ -155,13 +176,7 @@ def esegui(df: pd.DataFrame, seme: int = config.SEME) -> list[dict]:
 
 
 def riepilogo(righe: list[dict]) -> pd.DataFrame:
-    df = pd.DataFrame(righe)
-    gruppi = df.groupby(["esperimento", "modello"])
-    out = gruppi.agg(
-        accuracy_media=("accuracy", "mean"), accuracy_dev=("accuracy", "std"),
-        f1_media=("f1_macro", "mean"), f1_dev=("f1_macro", "std"),
-    ).reset_index()
-    return out
+    return riassumi(righe, ["esperimento", "modello"])
 
 
 if __name__ == "__main__":

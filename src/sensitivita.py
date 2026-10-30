@@ -94,12 +94,7 @@ def sensibilita_rumore(valori: list = RUMORI) -> pd.DataFrame:
                 tutte.append(riga)
     finally:
         config.RUMORE_GRAVITA = originale
-    esiti = pd.DataFrame(tutte)
-    gruppi = esiti.groupby(["rumore", "esperimento", "modello"])
-    return gruppi.agg(
-        accuracy_media=("accuracy", "mean"), accuracy_dev=("accuracy", "std"),
-        f1_media=("f1_macro", "mean"), f1_dev=("f1_macro", "std"),
-    ).reset_index()
+    return tm.riassumi(tutte, ["rumore", "esperimento", "modello"])
 
 
 if __name__ == "__main__":
