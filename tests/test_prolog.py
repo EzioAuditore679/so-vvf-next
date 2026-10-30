@@ -12,8 +12,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 import config
 import modello_generativo as mg
-import prolog_export
 from domain import (
+    SOGLIA_PIANI_AUTOSCALA,
     Gravita,
     Meteo,
     Persone,
@@ -40,8 +40,15 @@ def _incidente(i, tipo=TipoEdificio.RESIDENZIALE, piano=0, sost=SostanzePericolo
     return dict(id=i, tipo=tipo, piano=piano, sostanze=sost, persone=persone, meteo=meteo)
 
 
-def test_kb_statica_aggiornata_rispetto_a_python():
-    assert prolog_export.KB_STATICA_PATH.read_text(encoding="utf-8") == prolog_export.genera_kb_statica()
+def test_fatti_di_dominio_coincidono_con_python(kb):
+    """Soglie e punteggi sono scritti a mano in kb.pl: devono restare uguali a quelli del generatore."""
+    assert kb.fatti_dominio() == {
+        "punti_persone": {p.value: n for p, n in mg.PUNTI_PERSONE.items()},
+        "punti_velocita": {v.value: n for v, n in mg.PUNTI_VELOCITA.items()},
+        "soglia_critico": mg.SOGLIA_CRITICO,
+        "soglia_alto": mg.SOGLIA_ALTO,
+        "soglia_piani_autoscala": SOGLIA_PIANI_AUTOSCALA,
+    }
 
 
 def test_autoscala_solo_in_altezza_e_con_persone(kb):

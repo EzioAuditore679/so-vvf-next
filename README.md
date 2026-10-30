@@ -18,8 +18,8 @@ La catena completa è: testo della chiamata → campi → gravità stimata → s
    `src/nlp_extract.py` è un **adattatore di ingresso** che ricava i campi dal testo; non è oggetto di valutazione nella relazione.
 
 2. **Knowledge base Prolog** (`knowledge_base/kb.pl`, interrogata via `pyswip` da `src/prolog_engine.py`): ruoli della squadra derivati dalla gravità operativa e mezzi adatti a ogni ruolo, con negazione per fallimento (`\+`) per l'incompatibilità canadair–sostanze pericolose; spiegazioni dei ruoli (`motivo/3`); gravità stimata da una fonte esterna che prevale sulla regola; regola di gravità a tre livelli, identica a `regola_gravita` (verificata da test su 2000 casi); abduzione sulla velocità del fuoco (la variabile latente che spiega la gravità osservata); propagazione ricorsiva del pericolo tra edifici adiacenti, con lista dei visitati per evitare i cicli; vincoli di integrità sulle proposte di dispatch.
-   - Soglie e punteggi della gravità non sono scritti a mano in Prolog: `src/prolog_export.py` li genera da `modello_generativo.py` in `knowledge_base/kb_statica.pl`, che `kb.pl` include. Un test verifica che il file generato sia aggiornato.
-   - Complessità di `kb.pl` misurata con `KnowledgeBase().complessita()`: 24 predicati, 37 regole con corpo, 43 clausole. La profondità della ricorsione di `collegato/2` è al massimo il numero di incidenti dello scenario.
+   - La KB è un solo file: in cima la conoscenza di dominio (punti e soglie della gravità, soglia dei piani per l'autoscala), poi le regole. I fatti di dominio coincidono con le costanti del generatore Python: lo verificano un test diretto sulle costanti e un test sulla gravità di 2000 casi.
+   - Complessità di `kb.pl` misurata con `KnowledgeBase().complessita()`: 29 predicati, 37 regole con corpo, 52 clausole (di cui 9 fatti di dominio). La profondità della ricorsione di `collegato/2` è al massimo il numero di incidenti dello scenario.
    - I fatti di scenario (incidenti, mezzi, registro, velocità) vengono asseriti da Python per ogni scenario. Le regole restano fisse nel file.
 
 3. **Ricerca a due livelli** (`src/search.py`, dimostrazioni in `docs/ricerca.md`):
@@ -70,8 +70,7 @@ so-vvf-next/
 │   ├── gold_set.csv           # contaminato: usato per analisi errori
 │   └── test_set.csv           # valutato una sola volta
 ├── knowledge_base/
-│   ├── kb.pl                  # regole Prolog
-│   └── kb_statica.pl          # soglie e punteggi, generato da prolog_export.py
+│   └── kb.pl                  # la KB: conoscenza di dominio e regole
 ├── results/                   # metriche, errori, storico
 ├── plots/                     # grafici generati da main.py
 ├── tests/
@@ -85,7 +84,6 @@ so-vvf-next/
     ├── generate_dataset.py    # generatore di chiamate e stato del mondo
     ├── nlp_extract.py         # adattatore di ingresso (regole e regex)
     ├── validate.py            # controllo di integrità e metriche NLP
-    ├── prolog_export.py       # genera kb_statica.pl dalle costanti Python
     ├── prolog_engine.py       # interfaccia pyswip verso kb.pl
     ├── bayes_engine.py        # rete bayesiana: stima, inferenza, cross-fitting
     ├── search.py              # ricerca su griglia e dispatch per ruoli: LcFS, A*

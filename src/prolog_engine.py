@@ -1,7 +1,7 @@
 """Interfaccia Python verso la knowledge base Prolog (SWI-Prolog tramite pyswip).
 
-Rigenera la parte statica della KB, poi carica i fatti di uno scenario e interroga
-le regole di kb.pl. Non contiene regole di dominio.
+Consulta knowledge_base/kb.pl, carica i fatti di uno scenario e interroga le regole.
+Non contiene regole né conoscenza di dominio: stanno tutte nella KB.
 """
 
 import re
@@ -13,7 +13,6 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 import config
-import prolog_export
 from pyswip import Prolog
 
 KB_PATH = config.KB_DIR / "kb.pl"
@@ -44,7 +43,6 @@ def _id(x) -> str:
 class KnowledgeBase:
 
     def __init__(self, percorso: Path = KB_PATH):
-        prolog_export.salva()
         self._p = Prolog()
         self._p.consult(str(percorso))
 
@@ -145,6 +143,22 @@ class KnowledgeBase:
     def ruoli_scoperti(self, assegnazioni: list[tuple]) -> list[str]:
         return self._con_assegnazioni(
             assegnazioni, "findall(S, (ruolo_scoperto(I, R), format(atom(S), '~w-~w', [I, R])), L)")
+
+    def fatti_dominio(self) -> dict:
+        """Soglie e punteggi della KB, per confrontarli con le costanti Python."""
+        def coppie(pred):
+            return {str(r["K"]): int(r["V"]) for r in self._q(f"{pred}(K, V)")}
+
+        def valore(pred):
+            return int(self._q(f"{pred}(V)")[0]["V"])
+
+        return {
+            "punti_persone": coppie("punti_persone"),
+            "punti_velocita": coppie("punti_velocita"),
+            "soglia_critico": valore("soglia_critico"),
+            "soglia_alto": valore("soglia_alto"),
+            "soglia_piani_autoscala": valore("soglia_piani_autoscala"),
+        }
 
     def complessita(self) -> dict:
         r = self._q("kb_statistiche(P, R, C)")

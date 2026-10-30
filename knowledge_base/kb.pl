@@ -1,8 +1,25 @@
-% knowledge_base/kb.pl
-% Regole fisse. Soglie e punteggi sono in kb_statica.pl, generato da src/prolog_export.py.
-% I fatti di scenario sono asseriti da src/prolog_engine.py.
+% knowledge_base/kb.pl: la knowledge base di SO-VVF-NEXT, in un solo file.
+% Contiene la conoscenza di dominio (fatti), le regole e la dichiarazione dei fatti di scenario,
+% che src/prolog_engine.py asserisce per ogni scenario (incidenti, mezzi, registro, stime).
+% I fatti di dominio devono coincidere con le costanti di src/modello_generativo.py e src/domain.py:
+% lo verifica tests/test_prolog.py.
 
-:- include('kb_statica.pl').
+% --- Conoscenza di dominio --------------------------------------------------
+
+% Oltre questo piano serve l'autoscala per soccorrere le persone.
+soglia_piani_autoscala(4).
+
+% Regola di gravità: punteggio = persone + velocità + [sostanze] + [vulnerabilità alta] + [adiacenti >= 2].
+punti_persone(confermate, 2).
+punti_persone(incerte, 1).
+punti_persone(assenti, 0).
+punti_velocita(alta, 2).
+punti_velocita(media, 1).
+punti_velocita(bassa, 0).
+soglia_critico(5).
+soglia_alto(3).
+
+% --- Fatti di scenario, asseriti da Python -----------------------------------
 
 :- dynamic incidente/6.        % incidente(Id, Tipo, Piano, Sostanze, Persone, Meteo)
 :- dynamic registro/3.         % registro(Id, Vulnerabilita, NAdiacenti)
