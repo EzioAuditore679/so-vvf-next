@@ -10,10 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import config  # noqa: E402
-import modello_generativo as mg  # noqa: E402
-import prolog_export  # noqa: E402
-from domain import (  # noqa: E402
+import config  
+import modello_generativo as mg  
+import prolog_export 
+from domain import (  
     Gravita,
     Meteo,
     Persone,

@@ -12,9 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import config  # noqa: E402
-import prolog_export  # noqa: E402
-from pyswip import Prolog  # noqa: E402
+import config  
+import prolog_export  
+from pyswip import Prolog  
 
 KB_PATH = config.KB_DIR / "kb.pl"
 _ID = re.compile(r"^[a-z][a-z0-9_]*$")

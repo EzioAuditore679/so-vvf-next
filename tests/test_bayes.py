@@ -1,4 +1,4 @@
-"""Test della rete bayesiana (src/bayes_engine.py): validità delle CPT, Laplace, inferenza, recupero."""
+"""Test della rete bayesiana: validità delle CPT, Laplace, inferenza, recupero."""
 
 import sys
 from pathlib import Path
@@ -11,11 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import bayes_engine as be  # noqa: E402
-import config  # noqa: E402
-import generate_dataset as gd  # noqa: E402
-import modello_generativo as mg  # noqa: E402
-from domain import Meteo, Persone, SostanzePericolose, TipoEdificio, VelocitaFuoco  # noqa: E402
+import bayes_engine as be 
+import config  
+import generate_dataset as gd 
+import modello_generativo as mg  
+from domain import Meteo, Persone, SostanzePericolose, TipoEdificio, VelocitaFuoco  
 
 N_GRANDE = 20_000
 TOLLERANZA = 0.03  # scarto massimo ammesso tra CPT appresa e probabilità del generatore
@@ -41,8 +41,7 @@ def rete_grande(df_grande):
     return be.stima(df_grande)
 
 
-# --- Struttura e CPT -------------------------------------------------------------------------
-
+# --- Struttura e CPT  --- 
 def test_struttura(rete):
     assert set(rete.nodes()) == set(be.STATI)
     assert set(rete.edges()) == set(be.ARCHI)
@@ -73,7 +72,7 @@ def test_alpha_maggiore_appiattisce(df_piccolo):
     assert p_50 > p_1
 
 
-# --- Inferenza -------------------------------------------------------------------------------
+# --- Inferenza ---
 
 def _p_critico(rete, **evidenza) -> float:
     base = dict(tipo_edificio="residenziale", piano="3", sostanze_pericolose="no", meteo="calmo",
@@ -105,7 +104,7 @@ def test_fuori_fold_forma(df_piccolo):
     assert np.all((p >= 0) & (p <= 1))
 
 
-# --- Recupero delle distribuzioni del generatore ----------------------------------------------
+# --- Recupero delle distribuzioni del generatore ---
 
 def test_recupero_velocita(rete_grande):
     """P(velocità | meteo, sostanze): tutte e 4 le configurazioni sono ben popolate."""

@@ -1,6 +1,6 @@
 """Ricerca nello spazio degli stati: distanze sulla griglia e dispatch dei mezzi.
 
-Due livelli, con dimostrazioni in docs/ricerca.md:
+Due livelli:
 - livello 1: distanza tra una stazione e un incidente sulla griglia con ostacoli (A*, Manhattan);
 - livello 2: copertura dei ruoli richiesti dagli incidenti, con costi dal livello 1 (LcFS, A* con h_min
   o h_libero). I ruoli e i mezzi adatti vengono dalla KB Prolog (adatti_con_kb).
@@ -24,12 +24,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import config  # noqa: E402
-import modello_generativo as mg  # noqa: E402
-from domain import TipoMezzo  # noqa: E402
+import config  
+import modello_generativo as mg  
+from domain import TipoMezzo  
 
 INF = math.inf
-COSTO_MINIMO = 1  # epsilon della Proposizione 2.1: ogni assegnazione costa almeno 1
+COSTO_MINIMO = 1  
 
 
 @dataclass(frozen=True)
@@ -87,8 +87,7 @@ def ricerca(inizio, obiettivo: Callable, successori: Callable, euristica: Callab
     return Risultato(INF, None, espansi, generati, True)
 
 
-# --- Livello 1: distanze sulla griglia ---------------------------------------
-
+# --- Livello 1: distanze sulla griglia ---
 Cella = tuple[int, int]
 
 
@@ -126,7 +125,7 @@ def genera_griglia(rng: random.Random, righe: int, colonne: int, p_ostacolo: flo
     return Griglia(righe, colonne, ostacoli)
 
 
-# --- Livello 2: dispatch per ruoli ------------------------------------------
+# --- Livello 2: dispatch per ruoli ---
 
 @dataclass
 class Scenario:

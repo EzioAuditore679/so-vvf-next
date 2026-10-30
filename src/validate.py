@@ -1,12 +1,5 @@
-"""Validazione di un insieme di test (gold, dev o test) per l'estrattore NLP.
-
-1. Integrità del file: colonne, valori ammessi, id unici.
-2. Valutazione di estrai_campi(): accuratezza, precisione, recall e F1 macro, più la lista
-   degli errori uno per uno (results/errori_nlp_*.csv). L'estrattore è a regole e deterministico:
-   gli errori elencati dicono più di una matrice di confusione.
-
-Uso: python src/validate.py [gold|dev|test]   (default: gold)
-"""
+"""Validazione di un insieme di test (gold, dev o test) per l'estrattore NLP. """
+ 
 
 import csv
 import json
@@ -17,10 +10,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import config  # noqa: E402
-from domain import Meteo, Persone, SostanzePericolose, TipoEdificio  # noqa: E402
-from nlp_extract import estrai_campi  # noqa: E402
-from sklearn.metrics import (  # noqa: E402
+import config  
+from domain import Meteo, Persone, SostanzePericolose, TipoEdificio  
+from nlp_extract import estrai_campi  
+from sklearn.metrics import (  
     accuracy_score,
     precision_recall_fscore_support,
 )

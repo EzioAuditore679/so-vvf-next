@@ -1,4 +1,4 @@
-"""Test della ricerca: ammissibilità, consistenza e ottimalità delle euristiche (docs/ricerca.md)."""
+"""Test della ricerca: ammissibilità, consistenza e ottimalità delle euristiche """
 
 import random
 import sys
@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-from domain import TipoMezzo  # noqa: E402
-import search as s  # noqa: E402
+from domain import TipoMezzo
+import search as s  
 
 
 def _griglia_casuale(rng, righe=8, colonne=8, p=0.25):

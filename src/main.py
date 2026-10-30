@@ -21,11 +21,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import pandas as pd  # noqa: E402
+import pandas as pd  
 
-import config  # noqa: E402
+import config  
 
-# --- Demo ----------------------------------------------------------------------------------------
 
 # Quattro chiamate pensate per mostrare i casi interessanti. c2 e c3 sono vicine: se c2 è critica,
 # c3 (alta) diventa critica per propagazione. Il registro della zona dà vulnerabilità e adiacenti.
@@ -144,9 +143,9 @@ def demo() -> None:
     print("\n5. Verifica di integrità in Prolog:", "proposta valida" if not violazioni else violazioni)
 
 
-# --- Grafici -------------------------------------------------------------------------------------
+# --- Grafici ---
 
-# Palette categoriale di riferimento (skill dataviz), slot in ordine fisso, validata per daltonismo.
+# Palette usata
 COLORI = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"]
 TESTO, TESTO_2, GRIGLIA, FONDO = "#0b0b0b", "#52514e", "#e4e3df", "#fcfcfb"
 

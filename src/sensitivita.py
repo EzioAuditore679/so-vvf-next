@@ -6,7 +6,6 @@
    quanto bene lo stimatore recupera le probabilità dichiarate, non la loro correttezza.
 2. Rumore delle etichette: gli esperimenti A, B, C e l'oracolo ripetuti con rumore 0.05, 0.12 e 0.20.
 
-Esecuzione dalla radice del progetto: python src/sensitivita.py
 """
 
 import sys
@@ -16,15 +15,15 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
+import numpy as np  
+import pandas as pd  
 
-import bayes_engine as be  # noqa: E402
-import config  # noqa: E402
-import generate_dataset as gd  # noqa: E402
-import modello_generativo as mg  # noqa: E402
-import train_models as tm  # noqa: E402
-from domain import Persone, SostanzePericolose, TipoEdificio, VelocitaFuoco  # noqa: E402
+import bayes_engine as be  
+import config  
+import generate_dataset as gd  
+import modello_generativo as mg  
+import train_models as tm  
+from domain import Persone, SostanzePericolose, TipoEdificio, VelocitaFuoco  
 
 RUMORI = [0.05, 0.12, 0.20]
 

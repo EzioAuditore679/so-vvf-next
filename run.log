@@ -1,0 +1,129 @@
+
+$ python src/generate_dataset.py
+Scritti 1000 record in /home/michele/icon/so-vvf-next/data/dataset_sintetico.csv
+  tipo_edificio: {'industriale': 360, 'bosco': 236, 'residenziale': 404}
+  piano: {1: 238, 4: 102, 0: 236, 3: 151, 2: 210, 5: 44, 6: 19}
+  sostanze_pericolose: {'si': 370, 'no': 630}
+  persone: {'assenti': 561, 'confermate': 267, 'incerte': 172}
+  meteo: {'vento_forte': 385, 'calmo': 615}
+  velocita_fuoco: {'media': 354, 'bassa': 349, 'alta': 297}
+  vulnerabilita: {'bassa': 683, 'alta': 317}
+  adiacenti: {0: 425, 1: 299, 3: 100, 2: 176}
+  gravita: {'basso': 467, 'critico': 140, 'alto': 393}
+
+P(sostanze = si | tipo):
+  bosco: 0.04
+  industriale: 0.74
+  residenziale: 0.24
+P(gravita = critico | persone):
+  assenti: 0.03
+  confermate: 0.39
+  incerte: 0.10
+
+$ python -m pytest -q tests
+................................................................         [100%]
+64 passed in 4.23s
+
+$ python src/search.py
+  n  ruoli algoritmo     completi    espansi (media ± dev)  secondi (media)
+  2    2.9 A* h_libero    20/20            3.0 ± 1.2               0.000033
+  2    2.9 A* h_min       20/20            3.4 ± 1.3               0.000021
+  2    2.9 LcFS           20/20            4.4 ± 1.6               0.000033
+  4    6.8 A* h_libero    20/20           19.0 ± 24.0              0.000331
+  4    6.8 A* h_min       20/20           25.0 ± 29.1              0.000143
+  4    6.8 LcFS           20/20           48.5 ± 52.0              0.000306
+  6   10.8 A* h_libero    20/20          432.2 ± 1005.6            0.009489
+  6   10.8 A* h_min       20/20          550.4 ± 1232.5            0.003901
+  6   10.8 LcFS           20/20          922.1 ± 1843.1            0.007112
+  8   13.7 A* h_libero    20/20         1142.2 ± 2732.6            0.040017
+  8   13.7 A* h_min       20/20         1460.0 ± 2868.3            0.013873
+  8   13.7 LcFS           20/20         3204.2 ± 4466.8            0.035444
+ 10   16.6 A* h_libero    20/20        32046.5 ± 65227.9           1.130467
+ 10   16.6 A* h_min       20/20        45979.2 ± 85563.8           0.670422
+ 10   16.6 LcFS           20/20        78799.8 ± 121570.9          1.335414
+
+$ python src/train_models.py
+esperimento               modello  accuracy_media  accuracy_dev  f1_media  f1_dev
+          A  baseline_maggioranza           0.467         0.003     0.212   0.001
+          A           naive_bayes           0.675         0.047     0.645   0.050
+          A         random_forest           0.692         0.024     0.669   0.030
+          A regressione_logistica           0.696         0.036     0.671   0.036
+          B  baseline_maggioranza           0.467         0.003     0.212   0.001
+          B           naive_bayes           0.721         0.042     0.702   0.036
+          B         random_forest           0.725         0.038     0.697   0.046
+          B regressione_logistica           0.752         0.016     0.717   0.033
+          C  baseline_maggioranza           0.467         0.003     0.212   0.001
+          C           naive_bayes           0.683         0.047     0.636   0.047
+          C         random_forest           0.731         0.027     0.693   0.034
+          C regressione_logistica           0.746         0.014     0.708   0.036
+    oracolo  baseline_maggioranza           0.467         0.003     0.212   0.001
+    oracolo           naive_bayes           0.777         0.037     0.737   0.043
+    oracolo         random_forest           0.863         0.022     0.842   0.030
+    oracolo regressione_logistica           0.916         0.021     0.909   0.027
+       rete        rete_bayesiana           0.720         0.038     0.699   0.030
+
+$ python src/sensitivita.py
+ n_righe  errore_medio_cpt
+    1000            0.0542
+   20000            0.0419
+ rumore esperimento               modello  accuracy_media  accuracy_dev  f1_media  f1_dev
+   0.05           A  baseline_maggioranza           0.477         0.003     0.215   0.001
+   0.05           A           naive_bayes           0.678         0.032     0.652   0.032
+   0.05           A         random_forest           0.695         0.028     0.671   0.029
+   0.05           A regressione_logistica           0.704         0.017     0.679   0.027
+   0.05           B  baseline_maggioranza           0.477         0.003     0.215   0.001
+   0.05           B           naive_bayes           0.725         0.037     0.702   0.037
+   0.05           B         random_forest           0.729         0.051     0.703   0.049
+   0.05           B regressione_logistica           0.769         0.029     0.746   0.032
+   0.05           C  baseline_maggioranza           0.477         0.003     0.215   0.001
+   0.05           C           naive_bayes           0.691         0.041     0.642   0.039
+   0.05           C         random_forest           0.738         0.034     0.703   0.027
+   0.05           C regressione_logistica           0.772         0.028     0.747   0.029
+   0.05     oracolo  baseline_maggioranza           0.477         0.003     0.215   0.001
+   0.05     oracolo           naive_bayes           0.788         0.035     0.753   0.022
+   0.05     oracolo         random_forest           0.932         0.020     0.908   0.031
+   0.05     oracolo regressione_logistica           0.974         0.017     0.967   0.023
+   0.05        rete        rete_bayesiana           0.740         0.037     0.726   0.037
+   0.12           A  baseline_maggioranza           0.467         0.003     0.212   0.001
+   0.12           A           naive_bayes           0.675         0.047     0.645   0.050
+   0.12           A         random_forest           0.692         0.024     0.669   0.030
+   0.12           A regressione_logistica           0.696         0.036     0.671   0.036
+   0.12           B  baseline_maggioranza           0.467         0.003     0.212   0.001
+   0.12           B           naive_bayes           0.721         0.042     0.702   0.036
+   0.12           B         random_forest           0.725         0.038     0.697   0.046
+   0.12           B regressione_logistica           0.752         0.016     0.717   0.033
+   0.12           C  baseline_maggioranza           0.467         0.003     0.212   0.001
+   0.12           C           naive_bayes           0.683         0.047     0.636   0.047
+   0.12           C         random_forest           0.731         0.027     0.693   0.034
+   0.12           C regressione_logistica           0.746         0.014     0.708   0.036
+   0.12     oracolo  baseline_maggioranza           0.467         0.003     0.212   0.001
+   0.12     oracolo           naive_bayes           0.777         0.037     0.737   0.043
+   0.12     oracolo         random_forest           0.863         0.022     0.842   0.030
+   0.12     oracolo regressione_logistica           0.916         0.021     0.909   0.027
+   0.12        rete        rete_bayesiana           0.720         0.038     0.699   0.030
+   0.20           A  baseline_maggioranza           0.466         0.002     0.212   0.001
+   0.20           A           naive_bayes           0.643         0.027     0.605   0.006
+   0.20           A         random_forest           0.648         0.031     0.621   0.024
+   0.20           A regressione_logistica           0.657         0.033     0.625   0.037
+   0.20           B  baseline_maggioranza           0.466         0.002     0.212   0.001
+   0.20           B           naive_bayes           0.666         0.036     0.645   0.045
+   0.20           B         random_forest           0.677         0.036     0.642   0.032
+   0.20           B regressione_logistica           0.711         0.036     0.675   0.041
+   0.20           C  baseline_maggioranza           0.466         0.002     0.212   0.001
+   0.20           C           naive_bayes           0.648         0.016     0.603   0.013
+   0.20           C         random_forest           0.707         0.040     0.658   0.046
+   0.20           C regressione_logistica           0.715         0.035     0.675   0.047
+   0.20     oracolo  baseline_maggioranza           0.466         0.002     0.212   0.001
+   0.20     oracolo           naive_bayes           0.737         0.009     0.694   0.026
+   0.20     oracolo         random_forest           0.793         0.042     0.759   0.048
+   0.20     oracolo regressione_logistica           0.847         0.018     0.824   0.028
+   0.20        rete        rete_bayesiana           0.682         0.024     0.658   0.034
+
+$ python src/valutazione_dispatch.py
+   fonte  accuratezza_mean  accuratezza_std  critici_mancati_mean  critici_mancati_std  sovrastimati_mean  sovrastimati_std  ruoli_veri_scoperti_mean  ruoli_veri_scoperti_std  mezzi_superflui_mean  mezzi_superflui_std  regret_mean  regret_std  critici_mancati_totale  critici_veri_totale
+    vera             1.000            0.000                  0.00                0.000               0.00             0.000                      1.13                    1.308                  0.00                0.000         0.00       0.000                       0                   62
+      ml             0.782            0.184                  0.24                0.515               0.44             0.625                      1.24                    1.334                  0.11                0.345         7.00      15.485                      24                   62
+    rete             0.718            0.201                  0.23                0.468               0.57             0.685                      1.27                    1.355                  0.16                0.443         9.15      17.431                      23                   62
+ rete_kb             0.782            0.178                  0.07                0.256               0.69             0.800                      1.23                    1.347                  0.24                0.534         8.55      18.070                       7                   62
+prudente             0.574            0.212                  0.00                0.000               2.13             1.060                      1.23                    1.332                  0.48                0.717        11.24      21.625                       0                   62
+Grafici scritti in /home/michele/icon/so-vvf-next/plots

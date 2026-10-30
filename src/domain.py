@@ -51,7 +51,7 @@ class Vulnerabilita(str, Enum):
 class TipoMezzo(str, Enum):
     AUTOPOMPA = "autopompa"
     AUTOSCALA = "autoscala"
-    NUCLEO_NBCR = "nucleo_nbcr"      # rischio chimico, biologico, radiologico
+    NUCLEO_NBCR = "nucleo_nbcr"      # Per emergenze di tipo nucleare, battereologico, chimico, radiologico
     CANADAIR = "canadair"
 
 
@@ -62,8 +62,7 @@ class Campo(str, Enum):
     PERSONE = "persone"
 
 
-# Parole chiave usate dal generatore. Il gold set manuale non le usa tutte,
-# per evitare un test circolare.
+# Parole chiave usate dal generatore
 PAROLE_CHIAVE: dict[Campo, dict[Enum, list[str]]] = {
     Campo.TIPO_EDIFICIO: {
         TipoEdificio.RESIDENZIALE: ["una palazzina", "un condominio", "un appartamento"],

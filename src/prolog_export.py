@@ -12,9 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import config  # noqa: E402
-import modello_generativo as mg  # noqa: E402
-from domain import SOGLIA_PIANI_AUTOSCALA  # noqa: E402
+import config  
+import modello_generativo as mg  
+from domain import SOGLIA_PIANI_AUTOSCALA 
 
 KB_STATICA_PATH = config.KB_DIR / "kb_statica.pl"
 

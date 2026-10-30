@@ -1,7 +1,7 @@
-"""Rete bayesiana di SO-VVF-NEXT: 8 nodi, CPT per massima verosimiglianza con Laplace.
+"""Rete bayesiana con 8 nodi, CPT per massima verosimiglianza con Laplace.
 
 La struttura è il grafo causale di modello_generativo.py, senza il numero di edifici
-adiacenti (non modellato, vedi docs/rete_bayesiana.md). Velocità del fuoco e vulnerabilità
+adiacenti (non modellato).  Velocità del fuoco e vulnerabilità
 sono nei dati di addestramento ma non sono osservate in inferenza: vengono marginalizzate.
 """
 
@@ -12,23 +12,21 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import warnings  # noqa: E402
+import warnings  
 
-# pgmpy 1.1 segnala come deprecate BayesianEstimator e StructureScore (rimossi in 1.3, vedi
-# requirements.txt). Il filtro va impostato prima dell'import e sul testo del messaggio,
-# perché il warning è attribuito al modulo chiamante, non a pgmpy.
+# Filtro su un warning di phmpy su alcuni classi deprecate
 warnings.filterwarnings("ignore", category=FutureWarning, message=r".*pgmpy\..*")
 
-import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
-from pgmpy.estimators import BayesianEstimator  # noqa: E402
-from pgmpy.inference import VariableElimination  # noqa: E402
-from pgmpy.models import DiscreteBayesianNetwork  # noqa: E402
-from sklearn.model_selection import StratifiedKFold  # noqa: E402
+import numpy as np 
+import pandas as pd  
+from pgmpy.estimators import BayesianEstimator  
+from pgmpy.inference import VariableElimination 
+from pgmpy.models import DiscreteBayesianNetwork  
+from sklearn.model_selection import StratifiedKFold  
 
 
-import config  # noqa: E402
-from domain import (  # noqa: E402
+import config  
+from domain import (  
     Gravita,
     Meteo,
     Persone,
