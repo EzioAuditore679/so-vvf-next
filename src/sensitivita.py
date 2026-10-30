@@ -15,15 +15,15 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import numpy as np  
-import pandas as pd  
+import numpy as np
+import pandas as pd
 
-import bayes_engine as be  
-import config  
-import generate_dataset as gd  
-import modello_generativo as mg  
-import train_models as tm  
-from domain import Persone, SostanzePericolose, TipoEdificio, VelocitaFuoco  
+import bayes_engine as be
+import config
+import generate_dataset as gd
+import modello_generativo as mg
+import train_models as tm
+from domain import Persone, SostanzePericolose, TipoEdificio, VelocitaFuoco
 
 RUMORI = [0.05, 0.12, 0.20]
 

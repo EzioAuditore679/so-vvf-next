@@ -12,7 +12,6 @@ Fonti della gravità:
 
 Ipotesi: la KB riceve i campi veri della chiamata (l'operatore verifica la scheda), mentre ML e rete
 vedono i campi estratti dal testo, come in addestramento. Le fonti differiscono quindi solo nella gravità.
-ù
 """
 
 import math

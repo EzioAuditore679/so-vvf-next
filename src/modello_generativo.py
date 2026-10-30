@@ -61,7 +61,7 @@ BASE_CONFERMATE = {
 }
 INCREMENTO_CONFERMATE_PER_PIANO = 0.06
 TETTO_CONFERMATE = 0.65
-P_PERSONE_INCERTE = 0.20  
+P_PERSONE_INCERTE = 0.20
 P_VULNERABILITA_ALTA = 0.30
 P_ADIACENTI = [0.40, 0.30, 0.20, 0.10]  # probabilità di 0, 1, 2, 3 edifici adiacenti
 
@@ -112,7 +112,11 @@ def genera_variabili(rng: random.Random) -> dict:
 
 
 def regola_gravita(v: dict) -> Gravita:
-    """Regola di dominio deterministica, senza rumore."""
+    """Regola di dominio deterministica, senza rumore.
+
+    ATTENZIONE: il suo output non va mai passato come feature al modello ML, perché
+    coincide con il target a meno del rumore (target leakage).
+    """
     punti = PUNTI_PERSONE[v["persone"]] + PUNTI_VELOCITA[v["velocita_fuoco"]]
     punti += 1 if v["sostanze_pericolose"] is SostanzePericolose.SI else 0
     punti += 1 if v["vulnerabilita"] is Vulnerabilita.ALTA else 0

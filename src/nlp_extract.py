@@ -2,7 +2,8 @@
 
 Adattatore di ingresso, non oggetto di valutazione. Il lessico è definito qui e non
 riusa le frasi di PAROLE_CHIAVE: il generatore e l'estrattore non condividono le stesse
-espressioni. 
+espressioni. Il gold set è stato usato anche per analizzare gli errori, quindi il suo
+risultato non è completamente indipendente.
 """
 
 import csv
@@ -14,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-from domain import Meteo, Persone, SostanzePericolose, TipoEdificio  
+from domain import Meteo, Persone, SostanzePericolose, TipoEdificio
 
 ORDINALI = {"primo": 1, "secondo": 2, "terzo": 3, "quarto": 4, "quinto": 5, "sesto": 6}
 
@@ -121,6 +122,8 @@ def estrai_campi(testo: str) -> dict:
 
 
 if __name__ == "__main__":
+    # ATTENZIONE: numero ottimistico, le regole sono state scritte guardando testi dello stesso tipo.
+    # La valutazione vera si fa su gold/test in validate.py.
     percorso = ROOT / "data" / "dataset_sintetico.csv"
     campi = ["tipo_edificio", "piano", "sostanze_pericolose", "persone", "meteo"]
     corretti = {c: 0 for c in campi}

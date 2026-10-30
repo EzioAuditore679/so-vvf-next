@@ -1,5 +1,7 @@
-"""Validazione di un insieme di test (gold, dev o test) per l'estrattore NLP. """
- 
+"""Validazione di un insieme di test (gold, dev o test) per l'estrattore NLP.
+
+Uso: python src/validate.py [gold|dev|test]   (default: gold)
+"""
 
 import csv
 import json
@@ -10,10 +12,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import config  
-from domain import Meteo, Persone, SostanzePericolose, TipoEdificio  
-from nlp_extract import estrai_campi  
-from sklearn.metrics import (  
+import config
+from domain import Meteo, Persone, SostanzePericolose, TipoEdificio
+from nlp_extract import estrai_campi
+from sklearn.metrics import (
     accuracy_score,
     precision_recall_fscore_support,
 )

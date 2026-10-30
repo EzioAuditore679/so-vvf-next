@@ -24,12 +24,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import config  
-import modello_generativo as mg  
-from domain import TipoMezzo  
+import config
+import modello_generativo as mg
+from domain import TipoMezzo
 
 INF = math.inf
-COSTO_MINIMO = 1  
+COSTO_MINIMO = 1  # epsilon della Proposizione 2.1: ogni assegnazione costa almeno 1
 
 
 @dataclass(frozen=True)

@@ -12,21 +12,21 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import warnings  
+import warnings
 
-# Filtro su un warning di phmpy su alcuni classi deprecate
+# Filtro su un warning di pgmpy su alcune classi deprecate
 warnings.filterwarnings("ignore", category=FutureWarning, message=r".*pgmpy\..*")
 
-import numpy as np 
-import pandas as pd  
-from pgmpy.estimators import BayesianEstimator  
-from pgmpy.inference import VariableElimination 
-from pgmpy.models import DiscreteBayesianNetwork  
-from sklearn.model_selection import StratifiedKFold  
+import numpy as np
+import pandas as pd
+from pgmpy.estimators import BayesianEstimator
+from pgmpy.inference import VariableElimination
+from pgmpy.models import DiscreteBayesianNetwork
+from sklearn.model_selection import StratifiedKFold
 
 
-import config  
-from domain import (  
+import config
+from domain import (
     Gravita,
     Meteo,
     Persone,

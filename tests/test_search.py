@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from domain import TipoMezzo
-import search as s  
+import search as s
 
 
 def _griglia_casuale(rng, righe=8, colonne=8, p=0.25):

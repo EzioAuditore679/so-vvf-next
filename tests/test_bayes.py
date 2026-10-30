@@ -11,11 +11,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import bayes_engine as be 
-import config  
-import generate_dataset as gd 
-import modello_generativo as mg  
-from domain import Meteo, Persone, SostanzePericolose, TipoEdificio, VelocitaFuoco  
+import bayes_engine as be
+import config
+import generate_dataset as gd
+import modello_generativo as mg
+from domain import Meteo, Persone, SostanzePericolose, TipoEdificio, VelocitaFuoco
 
 N_GRANDE = 20_000
 TOLLERANZA = 0.03  # scarto massimo ammesso tra CPT appresa e probabilità del generatore
@@ -41,7 +41,7 @@ def rete_grande(df_grande):
     return be.stima(df_grande)
 
 
-# --- Struttura e CPT  --- 
+# --- Struttura e CPT  ---
 def test_struttura(rete):
     assert set(rete.nodes()) == set(be.STATI)
     assert set(rete.edges()) == set(be.ARCHI)

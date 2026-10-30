@@ -19,21 +19,21 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import numpy as np  
-import pandas as pd  
-from sklearn.compose import ColumnTransformer  
-from sklearn.dummy import DummyClassifier  
-from sklearn.ensemble import RandomForestClassifier  
-from sklearn.linear_model import LogisticRegression  
-from sklearn.metrics import accuracy_score, f1_score  
-from sklearn.model_selection import GridSearchCV, StratifiedKFold  
-from sklearn.naive_bayes import MultinomialNB  
-from sklearn.pipeline import Pipeline  
-from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder  
+import numpy as np
+import pandas as pd
+from sklearn.compose import ColumnTransformer
+from sklearn.dummy import DummyClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import KBinsDiscretizer, OneHotEncoder
 
-import bayes_engine as be  
-import config  
-from nlp_extract import estrai_campi  
+import bayes_engine as be
+import config
+from nlp_extract import estrai_campi
 
 CAMPI_TESTO = ["tipo_edificio", "piano", "sostanze_pericolose", "persone", "meteo"]
 CAMPI_REGISTRO = ["vulnerabilita", "adiacenti"]

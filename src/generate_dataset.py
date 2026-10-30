@@ -15,8 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import config  
-from domain import (  
+import config
+from domain import (
     PAROLE_CHIAVE,
     Campo,
     Meteo,
@@ -24,7 +24,7 @@ from domain import (
     SostanzePericolose,
     TipoEdificio,
 )
-from modello_generativo import genera_variabili, gravita_osservata, regola_gravita  
+from modello_generativo import genera_variabili, gravita_osservata, regola_gravita
 
 ORDINALI = {1: "primo", 2: "secondo", 3: "terzo", 4: "quarto", 5: "quinto", 6: "sesto"}
 
@@ -63,7 +63,7 @@ def _frase_sostanze(rng: random.Random, sostanze: SostanzePericolose) -> str:
 
 def _frase_persone(rng: random.Random, persone: Persone) -> str:
     kw = rng.choice(PAROLE_CHIAVE[Campo.PERSONE][persone])
-    return f"mi sembra che {kw}"
+    return f"mi dicono che {kw}"
 
 
 def _rumore(rng: random.Random, testo: str) -> str:

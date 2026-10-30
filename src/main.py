@@ -21,9 +21,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-import pandas as pd  
+import pandas as pd
 
-import config  
+import config
 
 
 # Quattro chiamate pensate per mostrare i casi interessanti. c2 e c3 sono vicine: se c2 è critica,
